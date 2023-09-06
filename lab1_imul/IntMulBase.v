@@ -35,6 +35,115 @@ module lab1_imul_IntMulBase
   // together.
   // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+  logic [31:0] a;
+  logic [31:0] b;
+
+  assign  a = istream_msg[63:32];
+  assign  b = istream_msg[31:0];
+
+  // -----------------------------
+
+  logic [31:0]  b_shifted;
+  logic         b_mux_sel;    // control unit
+  logic         b_mux_out;
+
+  logic [31:0]  b_to_shift;
+  logic         b_lsb;        // control unit use
+
+  assign b_lsb = b_to_shift[0];
+  assign b_shifted = b_to_shift >> 1;
+
+  vc_Mux2 #(32) b_mux (
+    .in0(b),
+    .in1(b_shifted),
+    .sel(b_mux_sel),
+    .out(b_mux_out)
+  );
+
+  vc_Reg #(32) b_reg (
+    .clk(clk),
+    .d(b_mux_out),    // input
+    .q(b_to_shift)    // output
+    // at posedge, q <= d
+  );
+
+  // -----------------------------
+
+  logic [31:0]  a_shifted;
+  logic         a_mux_sel;    // control unit
+  logic         a_mux_out;
+
+  logic [31:0]  a_to_shift;
+
+  assign a_shifted = a_to_shift << 1;
+
+  vc_Mux2 #(32) a_mux (
+    .in0(a),
+    .in1(a_shifted),
+    .sel(a_mux_sel),
+    .out(a_mux_out)
+  );
+
+  vc_Reg #(32) a_reg (
+    .clk(clk),
+    .d(a_mux_out),
+    .q(a_to_shift)
+  );
+
+  // -----------------------------
+
+  logic         result_en;        // control unit
+  logic         result_mux_sel;   // control unit
+  logic [31:0]  result_mux_out;
+
+  vc_Mux2 #(32) result_mux(
+    .in0(0),
+    .in1(add_mux_out),
+    .sel(result_mux_sel),
+    .out(result_mux_out)
+  );
+
+  vc_EnReg #(32) result_reg(
+    .clk(clk),
+    .reset(reset),
+    .d(result_mux_out),
+    .en(result_en),
+    .q(ostream_msg)
+  );
+
+  logic [31:0]  a_plus_out;
+  logic         add_mux_sel;      // control unit
+  logic [31:0]  add_mux_out;
+
+  assign a_plus_out = ostream_msg+a_to_shift;
+
+  vc_Mux2 #(32) add_mux(
+    .in0(ostream_msg),
+    .in1(a_plus_out),
+    .sel(add_mux_sel),
+    .out(add_mux_out)
+  );
+
+  // -----------------------------
+
+  control control_unit(
+    .clk(clk),
+    .reset(reset),
+    .istream_val(istream_val),
+    .ostream_rdy(ostream_rdy),
+    .b_lsb(b_lsb),
+    .ostream_val(ostream_val),
+    .istream_rdy(istream_rdy),
+    .b_mux_sel(b_mux_sel),
+    .a_mux_sel(a_mux_sel),
+    .result_mux_sel(result_mux_sel),
+    .result_en(result_en),
+    .add_mux_sel(add_mux_sel)
+  );
+
+  // always_ff @(posedge clk) begin      
+  // end
+
   //----------------------------------------------------------------------
   // Line Tracing
   //----------------------------------------------------------------------
@@ -64,6 +173,97 @@ module lab1_imul_IntMulBase
   `VC_TRACE_END
 
   `endif /* SYNTHESIS */
+
+endmodule
+
+module control
+(
+  input  logic        clk,
+  input  logic        reset,
+
+  input  logic        istream_val,
+  input  logic        ostream_rdy,
+
+  input  logic        b_lsb,
+
+  output logic        ostream_val,
+  output logic        istream_rdy,
+
+  output logic        b_mux_sel,
+  output logic        a_mux_sel,
+  output logic        result_mux_sel,
+  output logic        result_en,
+  output logic        add_mux_sel
+);
+
+  typedef enum logic [$clog2(3)-1:0] {
+    STATE_IDLE,
+    STATE_CALC,
+    STATE_DONE
+  } state_t;
+
+  logic [5:0] counter;
+  state_t state;
+  logic [5:0] next_counter;
+  state_t next_state;
+
+  // State Transition block
+  always_comb begin 
+    next_state = state;
+    next_counter = counter;
+    if(istream_val && state == STATE_IDLE)begin
+      next_state = STATE_CALC;
+      next_counter = 0;
+    end
+    if(counter == 32 && state == STATE_CALC) begin
+      next_state = STATE_DONE;
+    end
+    if(ostream_rdy && state == STATE_DONE) begin
+       next_state = STATE_IDLE; 
+    end
+  end
+
+  // State Output block
+  always_comb begin
+    b_mux_sel = 0;
+    a_mux_sel = 0;
+    result_mux_sel = 0;
+    result_en = 0;
+    add_mux_sel = 0;
+    istream_rdy = 0;
+
+    case(state)
+      STATE_IDLE: begin
+        istream_rdy = 1;
+      end
+      STATE_CALC: begin
+        next_counter = counter + 1;
+        b_mux_sel = 1;
+        a_mux_sel = 1;
+        result_en = 1;
+        if(b_lsb == 1) begin
+          add_mux_sel = 1;
+          result_mux_sel = 1;
+        end
+      end
+      STATE_DONE: begin
+        ostream_val = 1;
+      end
+      default: begin
+        next_state = STATE_IDLE;
+      end
+    endcase
+  end
+
+  always_ff @(posedge clk) begin
+    if (reset) begin
+      state <= STATE_IDLE;
+      next_counter <= 0;
+    end else begin
+      state <= next_state;
+      counter <= next_counter;
+    end
+  end
 
 endmodule
 
