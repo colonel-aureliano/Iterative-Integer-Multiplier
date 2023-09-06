@@ -298,6 +298,6 @@ help:
 	@head -n 60 Makefile 
 
 clean:
-	-rm -rf obj_dir logs *.log *.dmp *.vpd coverage.dat core results waves
+	-rm -rf obj_dir logs *.log *.dmp *.vpd coverage.dat core* results waves
 
 FORCE:
