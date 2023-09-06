@@ -51,14 +51,14 @@ module top(  input logic clk, input logic linetrace );
 
   lab1_imul_`DESIGN imul
   (
-    .clk   (clk),
-    .reset (reset),
-    .istream_val(istream_val),
-    .istream_rdy(istream_rdy),
-    .istream_msg(istream_msg),
-    .ostream_val   (ostream_val),
-    .ostream_rdy   (ostream_rdy),
-    .ostream_msg   (ostream_msg)
+    .clk            (clk),
+    .reset          (reset),
+    .istream_val    (istream_val),
+    .istream_rdy    (istream_rdy),
+    .istream_msg    (istream_msg),
+    .ostream_val    (ostream_val),
+    .ostream_rdy    (ostream_rdy),
+    .ostream_msg    (ostream_msg)
   );
 
   initial begin 
@@ -74,6 +74,8 @@ module top(  input logic clk, input logic linetrace );
   //----------------------------------------------------------------------
   // Run the Test Bench
   //----------------------------------------------------------------------
+
+  integer i;
 
   initial begin
 
@@ -110,7 +112,7 @@ module top(  input logic clk, input logic linetrace );
 
     while(!istream_rdy) @(negedge clk); // Wait until ready is asserted
     @(negedge clk); // Move to next cycle.
-    
+
     istream_val = 1'b0; // Deassert ready input
     if(!ostream_val) @(ostream_val);// Wait for response
     @(negedge clk); // read at low clk
@@ -180,6 +182,19 @@ module top(  input logic clk, input logic linetrace );
     @(negedge clk); // Move to next cycle.
     
     istream_val = 1'b0; // Deassert ready input
+
+    // for (i = 0; i < 4; i = i + 1) begin
+    //   $display("-----------------------------");
+    //   $display("counter: %d", imul.control_unit.counter);
+    //   $display("b_lsb: %b", imul.b_lsb);
+    //   $display("a_plus_out: %b", imul.a_plus_out);
+    //   $display("add_mux_sel: %b", imul.add_mux_sel);
+    //   $display("result_mux_sel: %b", imul.result_mux_sel);
+    //   $display("result_en: %b", imul.result_en);
+    //   $display("ostream_msg: %b", imul.ostream_msg);
+    //   @(negedge clk);
+		// end
+
     if(!ostream_val) @(ostream_val);// Wait for response
     @(negedge clk); // read at low clk
     

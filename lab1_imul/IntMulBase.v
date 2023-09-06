@@ -7,6 +7,8 @@
 `define LAB1_IMUL_INT_MUL_BASE_V
 
 `include "vc/trace.v"
+`include "vc/muxes.v"
+`include "vc/regs.v"
 
 // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // Define datapath and control unit here.
@@ -15,6 +17,8 @@
 //========================================================================
 // Integer Multiplier Fixed-Latency Implementation
 //========================================================================
+
+// verilator lint_off WIDTHEXPAND
 
 module lab1_imul_IntMulBase
 (
@@ -45,7 +49,7 @@ module lab1_imul_IntMulBase
 
   logic [31:0]  b_shifted;
   logic         b_mux_sel;    // control unit
-  logic         b_mux_out;
+  logic [31:0]  b_mux_out;
 
   logic [31:0]  b_to_shift;
   logic         b_lsb;        // control unit use
@@ -60,8 +64,9 @@ module lab1_imul_IntMulBase
     .out(b_mux_out)
   );
 
-  vc_Reg #(32) b_reg (
+  vc_ResetReg #(32) b_reg (
     .clk(clk),
+    .reset(reset),
     .d(b_mux_out),    // input
     .q(b_to_shift)    // output
     // at posedge, q <= d
@@ -71,7 +76,7 @@ module lab1_imul_IntMulBase
 
   logic [31:0]  a_shifted;
   logic         a_mux_sel;    // control unit
-  logic         a_mux_out;
+  logic [31:0]  a_mux_out;
 
   logic [31:0]  a_to_shift;
 
@@ -84,8 +89,9 @@ module lab1_imul_IntMulBase
     .out(a_mux_out)
   );
 
-  vc_Reg #(32) a_reg (
+  vc_ResetReg #(32) a_reg (
     .clk(clk),
+    .reset(reset),
     .d(a_mux_out),
     .q(a_to_shift)
   );
@@ -115,7 +121,7 @@ module lab1_imul_IntMulBase
   logic         add_mux_sel;      // control unit
   logic [31:0]  add_mux_out;
 
-  assign a_plus_out = ostream_msg+a_to_shift;
+  assign a_plus_out = ostream_msg + a_to_shift;
 
   vc_Mux2 #(32) add_mux(
     .in0(ostream_msg),
@@ -127,22 +133,22 @@ module lab1_imul_IntMulBase
   // -----------------------------
 
   control control_unit(
-    .clk(clk),
-    .reset(reset),
-    .istream_val(istream_val),
-    .ostream_rdy(ostream_rdy),
-    .b_lsb(b_lsb),
-    .ostream_val(ostream_val),
-    .istream_rdy(istream_rdy),
-    .b_mux_sel(b_mux_sel),
-    .a_mux_sel(a_mux_sel),
-    .result_mux_sel(result_mux_sel),
-    .result_en(result_en),
-    .add_mux_sel(add_mux_sel)
+    .clk            (clk),
+    .reset          (reset),
+    .istream_val    (istream_val),
+    .ostream_rdy    (ostream_rdy),
+    .b_lsb          (b_lsb),
+    .ostream_val    (ostream_val),
+    .istream_rdy    (istream_rdy),
+    .b_mux_sel      (b_mux_sel),
+    .a_mux_sel      (a_mux_sel),
+    .result_mux_sel (result_mux_sel),
+    .result_en      (result_en),
+    .add_mux_sel    (add_mux_sel)
   );
 
-  // always_ff @(posedge clk) begin      
-  // end
+  always_ff @(posedge clk) begin      
+  end
 
   //----------------------------------------------------------------------
   // Line Tracing
@@ -175,6 +181,7 @@ module lab1_imul_IntMulBase
   `endif /* SYNTHESIS */
 
 endmodule
+
 
 module control
 (
@@ -210,10 +217,8 @@ module control
   // State Transition block
   always_comb begin 
     next_state = state;
-    next_counter = counter;
     if(istream_val && state == STATE_IDLE)begin
       next_state = STATE_CALC;
-      next_counter = 0;
     end
     if(counter == 32 && state == STATE_CALC) begin
       next_state = STATE_DONE;
@@ -234,23 +239,25 @@ module control
 
     case(state)
       STATE_IDLE: begin
+        next_counter = 0;
         istream_rdy = 1;
+        result_en = 1;
       end
       STATE_CALC: begin
         next_counter = counter + 1;
         b_mux_sel = 1;
         a_mux_sel = 1;
-        result_en = 1;
+        result_mux_sel = 1;
         if(b_lsb == 1) begin
+          result_en = 1;
           add_mux_sel = 1;
-          result_mux_sel = 1;
         end
       end
       STATE_DONE: begin
         ostream_val = 1;
       end
       default: begin
-        next_state = STATE_IDLE;
+        $stop;
       end
     endcase
   end
@@ -258,7 +265,7 @@ module control
   always_ff @(posedge clk) begin
     if (reset) begin
       state <= STATE_IDLE;
-      next_counter <= 0;
+      counter <= 0;
     end else begin
       state <= next_state;
       counter <= next_counter;
@@ -266,5 +273,7 @@ module control
   end
 
 endmodule
+
+// verilator lint_on WIDTHEXPAND
 
 `endif /* LAB1_IMUL_INT_MUL_BASE_V */
