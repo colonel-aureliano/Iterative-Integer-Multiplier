@@ -217,7 +217,7 @@ module control
   // State Transition block
   always_comb begin 
     next_state = state;
-    if(istream_val && state == STATE_IDLE)begin
+    if(istream_rdy && istream_val && state == STATE_IDLE)begin
       next_state = STATE_CALC;
     end
     if(counter == 32 && state == STATE_CALC) begin
@@ -236,6 +236,7 @@ module control
     result_en = 0;
     add_mux_sel = 0;
     istream_rdy = 0;
+    ostream_val = 0;
 
     case(state)
       STATE_IDLE: begin
