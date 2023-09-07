@@ -182,19 +182,6 @@ module top(  input logic clk, input logic linetrace );
     @(negedge clk); // Move to next cycle.
     
     istream_val = 1'b0; // Deassert ready input
-
-    // for (i = 0; i < 4; i = i + 1) begin
-    //   $display("-----------------------------");
-    //   $display("counter: %d", imul.control_unit.counter);
-    //   $display("b_lsb: %b", imul.b_lsb);
-    //   $display("a_plus_out: %b", imul.a_plus_out);
-    //   $display("add_mux_sel: %b", imul.add_mux_sel);
-    //   $display("result_mux_sel: %b", imul.result_mux_sel);
-    //   $display("result_en: %b", imul.result_en);
-    //   $display("ostream_msg: %b", imul.ostream_msg);
-    //   @(negedge clk);
-		// end
-
     if(!ostream_val) @(ostream_val);// Wait for response
     @(negedge clk); // read at low clk
     
