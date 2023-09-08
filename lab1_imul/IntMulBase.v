@@ -48,11 +48,11 @@ module lab1_imul_IntMulBase
   // -----------------------------
 
   logic [31:0]  b_shifted;
-  logic         b_mux_sel;    // control unit
+  logic         b_mux_sel;    // set by control unit
   logic [31:0]  b_mux_out;
 
   logic [31:0]  b_to_shift;
-  logic         b_lsb;        // control unit use
+  logic         b_lsb;        // for control unit use
 
   assign b_lsb = b_to_shift[0];
   assign b_shifted = b_to_shift >> 1;
@@ -75,7 +75,7 @@ module lab1_imul_IntMulBase
   // -----------------------------
 
   logic [31:0]  a_shifted;
-  logic         a_mux_sel;    // control unit
+  logic         a_mux_sel;    // set by control unit
   logic [31:0]  a_mux_out;
 
   logic [31:0]  a_to_shift;
@@ -98,8 +98,8 @@ module lab1_imul_IntMulBase
 
   // -----------------------------
 
-  logic         result_en;        // control unit
-  logic         result_mux_sel;   // control unit
+  logic         result_en;        // set by control unit
+  logic         result_mux_sel;   // set by control unit
   logic [31:0]  result_mux_out;
 
   vc_Mux2 #(32) result_mux(
@@ -118,7 +118,7 @@ module lab1_imul_IntMulBase
   );
 
   logic [31:0]  a_plus_out;
-  logic         add_mux_sel;      // control unit
+  logic         add_mux_sel;      // set by control unit
   logic [31:0]  add_mux_out;
 
   assign a_plus_out = ostream_msg + a_to_shift;
@@ -146,9 +146,6 @@ module lab1_imul_IntMulBase
     .result_en      (result_en),
     .add_mux_sel    (add_mux_sel)
   );
-
-  always_ff @(posedge clk) begin      
-  end
 
   //----------------------------------------------------------------------
   // Line Tracing

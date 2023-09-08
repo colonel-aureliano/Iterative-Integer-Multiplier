@@ -75,8 +75,6 @@ module top(  input logic clk, input logic linetrace );
   // Run the Test Bench
   //----------------------------------------------------------------------
 
-  integer i;
-
   initial begin
 
     $display("Start of Testbench");
@@ -112,7 +110,7 @@ module top(  input logic clk, input logic linetrace );
 
     while(!istream_rdy) @(negedge clk); // Wait until ready is asserted
     @(negedge clk); // Move to next cycle.
-
+    
     istream_val = 1'b0; // Deassert ready input
     if(!ostream_val) @(ostream_val);// Wait for response
     @(negedge clk); // read at low clk
