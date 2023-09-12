@@ -20,24 +20,21 @@
 
 // verilator lint_off WIDTHEXPAND
 
-module lab1_imul_IntMulBase
+module dpath
 (
   input  logic        clk,
   input  logic        reset,
 
-  input  logic        istream_val,
-  output logic        istream_rdy,
   input  logic [63:0] istream_msg,
+  output logic [31:0] ostream_msg,
 
-  output logic        ostream_val,
-  input  logic        ostream_rdy,
-  output logic [31:0] ostream_msg
+  input logic         b_mux_sel,
+  input logic         a_mux_sel,
+  input logic         result_mux_sel,
+  input logic         result_en,
+  input logic         add_mux_sel,
+  output logic        b_lsb
 );
-
-  // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-  // Instantiate datapath and control models here and then connect them
-  // together.
-  // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
   logic [31:0] a;
   logic [31:0] b;
@@ -48,11 +45,9 @@ module lab1_imul_IntMulBase
   // -----------------------------
 
   logic [31:0]  b_shifted;
-  logic         b_mux_sel;    // set by control unit
   logic [31:0]  b_mux_out;
 
   logic [31:0]  b_to_shift;
-  logic         b_lsb;        // for control unit use
 
   assign b_lsb = b_to_shift[0];
   assign b_shifted = b_to_shift >> 1;
@@ -75,7 +70,6 @@ module lab1_imul_IntMulBase
   // -----------------------------
 
   logic [31:0]  a_shifted;
-  logic         a_mux_sel;    // set by control unit
   logic [31:0]  a_mux_out;
 
   logic [31:0]  a_to_shift;
@@ -98,8 +92,6 @@ module lab1_imul_IntMulBase
 
   // -----------------------------
 
-  logic         result_en;        // set by control unit
-  logic         result_mux_sel;   // set by control unit
   logic [31:0]  result_mux_out;
 
   vc_Mux2 #(32) result_mux(
@@ -118,7 +110,6 @@ module lab1_imul_IntMulBase
   );
 
   logic [31:0]  a_plus_out;
-  logic         add_mux_sel;      // set by control unit
   logic [31:0]  add_mux_out;
 
   assign a_plus_out = ostream_msg + a_to_shift;
@@ -130,55 +121,7 @@ module lab1_imul_IntMulBase
     .out(add_mux_out)
   );
 
-  // -----------------------------
-
-  control control_unit(
-    .clk            (clk),
-    .reset          (reset),
-    .istream_val    (istream_val),
-    .ostream_rdy    (ostream_rdy),
-    .b_lsb          (b_lsb),
-    .ostream_val    (ostream_val),
-    .istream_rdy    (istream_rdy),
-    .b_mux_sel      (b_mux_sel),
-    .a_mux_sel      (a_mux_sel),
-    .result_mux_sel (result_mux_sel),
-    .result_en      (result_en),
-    .add_mux_sel    (add_mux_sel)
-  );
-
-  //----------------------------------------------------------------------
-  // Line Tracing
-  //----------------------------------------------------------------------
-
-  `ifndef SYNTHESIS
-
-  logic [`VC_TRACE_NBITS-1:0] str;
-  `VC_TRACE_BEGIN
-  begin
-
-    $sformat( str, "%x", istream_msg );
-    vc_trace.append_val_rdy_str( trace_str, istream_val, istream_rdy, str );
-
-    vc_trace.append_str( trace_str, "(" );
-
-    // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    // Add additional line tracing using the helper tasks for
-    // internal state including the current FSM state.
-    // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-    vc_trace.append_str( trace_str, ")" );
-
-    $sformat( str, "%x", ostream_msg );
-    vc_trace.append_val_rdy_str( trace_str, ostream_val, ostream_rdy, str );
-
-  end
-  `VC_TRACE_END
-
-  `endif /* SYNTHESIS */
-
 endmodule
-
 
 module control
 (
@@ -217,7 +160,7 @@ module control
     if(istream_rdy && istream_val && state == STATE_IDLE)begin
       next_state = STATE_CALC;
     end
-    if(counter == 32 && state == STATE_CALC) begin
+    if(counter == 31 && state == STATE_CALC) begin
       next_state = STATE_DONE;
     end
     if(ostream_rdy && state == STATE_DONE) begin
@@ -269,6 +212,92 @@ module control
       counter <= next_counter;
     end
   end
+
+endmodule
+
+module lab1_imul_IntMulBase
+(
+  input  logic        clk,
+  input  logic        reset,
+
+  input  logic        istream_val,
+  output logic        istream_rdy,
+  input  logic [63:0] istream_msg,
+
+  output logic        ostream_val,
+  input  logic        ostream_rdy,
+  output logic [31:0] ostream_msg
+);
+
+  // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  // Instantiate datapath and control models here and then connect them
+  // together.
+  // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+  logic         add_mux_sel;      // set by control unit
+  logic         result_en;        // set by control unit
+  logic         result_mux_sel;   // set by control unit
+  logic         a_mux_sel;        // set by control unit
+  logic         b_mux_sel;        // set by control unit
+  logic         b_lsb;            // for control unit use
+
+  dpath datapath(
+    .clk            (clk),
+    .reset          (reset),
+    .istream_msg    (istream_msg),
+    .ostream_msg    (ostream_msg),
+    .b_mux_sel      (b_mux_sel),
+    .a_mux_sel      (a_mux_sel),
+    .result_mux_sel (result_mux_sel),
+    .result_en      (result_en),
+    .add_mux_sel    (add_mux_sel),
+    .b_lsb          (b_lsb)
+  );   
+
+  control control_unit(
+    .clk            (clk),
+    .reset          (reset),
+    .istream_val    (istream_val),
+    .ostream_rdy    (ostream_rdy),
+    .b_lsb          (b_lsb),
+    .ostream_val    (ostream_val),
+    .istream_rdy    (istream_rdy),
+    .b_mux_sel      (b_mux_sel),
+    .a_mux_sel      (a_mux_sel),
+    .result_mux_sel (result_mux_sel),
+    .result_en      (result_en),
+    .add_mux_sel    (add_mux_sel)
+  );
+
+  //----------------------------------------------------------------------
+  // Line Tracing
+  //----------------------------------------------------------------------
+
+  `ifndef SYNTHESIS
+
+  logic [`VC_TRACE_NBITS-1:0] str;
+  `VC_TRACE_BEGIN
+  begin
+
+    $sformat( str, "%x", istream_msg );
+    vc_trace.append_val_rdy_str( trace_str, istream_val, istream_rdy, str );
+
+    vc_trace.append_str( trace_str, "(" );
+
+    // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    // Add additional line tracing using the helper tasks for
+    // internal state including the current FSM state.
+    // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+    vc_trace.append_str( trace_str, ")" );
+
+    $sformat( str, "%x", ostream_msg );
+    vc_trace.append_val_rdy_str( trace_str, ostream_val, ostream_rdy, str );
+
+  end
+  `VC_TRACE_END
+
+  `endif /* SYNTHESIS */
 
 endmodule
 

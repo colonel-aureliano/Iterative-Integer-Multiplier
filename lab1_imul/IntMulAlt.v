@@ -8,10 +8,7 @@
 `include "vc/trace.v"
 `include "vc/muxes.v"
 `include "vc/regs.v"
-
-// ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// Define datapath and control unit here.
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+`include "IntMulHelper.v"
 
 //=========================================================================
 // Integer Multiplier Variable-Latency Implementation
@@ -19,24 +16,22 @@
 
 // verilator lint_off WIDTHEXPAND
 
-module lab1_imul_IntMulAlt
+module dpath_Alt
 (
   input  logic        clk,
   input  logic        reset,
 
-  input  logic        istream_val,
-  output logic        istream_rdy,
   input  logic [63:0] istream_msg,
+  output logic [31:0] ostream_msg,
 
-  output logic        ostream_val,
-  input  logic        ostream_rdy,
-  output logic [31:0] ostream_msg
+  input logic         b_mux_sel,
+  input logic         a_mux_sel,
+  input logic         result_mux_sel,
+  input logic         result_en,
+  input logic         add_mux_sel,
+  input logic   [5:0] shift_bits,
+  output logic [31:0] b_to_shift
 );
-
-  // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-  // Instantiate datapath and control models here and then connect them
-  // together.
-  // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
   logic [31:0] a;
   logic [31:0] b;
@@ -46,13 +41,8 @@ module lab1_imul_IntMulAlt
 
   // -----------------------------
 
-  logic [5:0]   shift_bits;   // set by control unit
-
   logic [31:0]  b_shifted;
-  logic         b_mux_sel;    // set by control unit
   logic [31:0]  b_mux_out;
-
-  logic [31:0]  b_to_shift;   // for control unit use
 
   assign b_shifted = b_to_shift >> shift_bits;
 
@@ -74,7 +64,6 @@ module lab1_imul_IntMulAlt
   // -----------------------------
 
   logic [31:0]  a_shifted;
-  logic         a_mux_sel;    // set by control unit
   logic [31:0]  a_mux_out;
 
   logic [31:0]  a_to_shift;
@@ -97,8 +86,6 @@ module lab1_imul_IntMulAlt
 
   // -----------------------------
 
-  logic         result_en;        // set by control unit
-  logic         result_mux_sel;   // set by control unit
   logic [31:0]  result_mux_out;
 
   vc_Mux2 #(32) result_mux(
@@ -117,7 +104,6 @@ module lab1_imul_IntMulAlt
   );
 
   logic [31:0]  a_plus_out;
-  logic         add_mux_sel;      // set by control unit
   logic [31:0]  add_mux_out;
 
   assign a_plus_out = ostream_msg + a_to_shift;
@@ -129,57 +115,9 @@ module lab1_imul_IntMulAlt
     .out(add_mux_out)
   );
 
-  // -----------------------------
-
-  control_alt control_unit(
-    .clk            (clk),
-    .reset          (reset),
-    .istream_val    (istream_val),
-    .ostream_rdy    (ostream_rdy),
-    .b_to_shift     (b_to_shift),
-    .ostream_val    (ostream_val),
-    .istream_rdy    (istream_rdy),
-    .b_mux_sel      (b_mux_sel),
-    .a_mux_sel      (a_mux_sel),
-    .result_mux_sel (result_mux_sel),
-    .result_en      (result_en),
-    .add_mux_sel    (add_mux_sel),
-    .shift_bits     (shift_bits)
-  );
-
-  //----------------------------------------------------------------------
-  // Line Tracing
-  //----------------------------------------------------------------------
-
-  `ifndef SYNTHESIS
-
-  logic [`VC_TRACE_NBITS-1:0] str;
-  `VC_TRACE_BEGIN
-  begin
-
-    $sformat( str, "%x", istream_msg );
-    vc_trace.append_val_rdy_str( trace_str, istream_val, istream_rdy, str );
-
-    vc_trace.append_str( trace_str, "(" );
-
-    // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    // Add additional line tracing using the helper tasks for
-    // internal state including the current FSM state.
-    // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-
-    vc_trace.append_str( trace_str, ")" );
-
-    $sformat( str, "%x", ostream_msg );
-    vc_trace.append_val_rdy_str( trace_str, ostream_val, ostream_rdy, str );
-
-  end
-  `VC_TRACE_END
-
-  `endif /* SYNTHESIS */
-
 endmodule
 
-module control_alt
+module control_Alt
 (
   input  logic        clk,
   input  logic        reset,
@@ -226,6 +164,11 @@ module control_alt
     end
   end
 
+  lab1_imul_IntMulHelper shift_helper(
+    .b_to_shift   (b_to_shift),
+    .shift_bits   (shift_bits)
+  );
+
   // State Output block
   always_comb begin
     b_mux_sel = 0;
@@ -235,7 +178,6 @@ module control_alt
     add_mux_sel = 0;
     istream_rdy = 0;
     ostream_val = 0;
-    shift_bits = 1;
 
     case(state)
       STATE_IDLE: begin
@@ -250,69 +192,6 @@ module control_alt
         if(b_to_shift[0] == 1) begin
           result_en = 1;
           add_mux_sel = 1;
-        end else begin
-          if(b_to_shift == 0)
-            shift_bits = 32;
-          else if(b_to_shift[30:0] == 0) 
-            shift_bits = 31;
-          else if(b_to_shift[29:0] == 0) 
-            shift_bits = 30;
-          else if(b_to_shift[28:0] == 0) 
-            shift_bits = 29;
-          else if(b_to_shift[27:0] == 0) 
-            shift_bits = 28;
-          else if(b_to_shift[26:0] == 0) 
-            shift_bits = 27;
-          else if(b_to_shift[25:0] == 0) 
-            shift_bits = 26;
-          else if(b_to_shift[24:0] == 0) 
-            shift_bits = 25;
-          else if(b_to_shift[23:0] == 0) 
-            shift_bits = 24;
-          else if(b_to_shift[22:0] == 0) 
-            shift_bits = 23;
-          else if(b_to_shift[21:0] == 0) 
-            shift_bits = 22;
-          else if(b_to_shift[20:0] == 0) 
-            shift_bits = 21;
-          else if(b_to_shift[19:0] == 0) 
-            shift_bits = 20;
-          else if(b_to_shift[18:0] == 0) 
-            shift_bits = 19;
-          else if(b_to_shift[17:0] == 0) 
-            shift_bits = 18;
-          else if(b_to_shift[16:0] == 0) 
-            shift_bits = 17;
-          else if(b_to_shift[15:0] == 0) 
-            shift_bits = 16;
-          else if(b_to_shift[14:0] == 0) 
-            shift_bits = 15;
-          else if(b_to_shift[13:0] == 0) 
-            shift_bits = 14;
-          else if(b_to_shift[12:0] == 0) 
-            shift_bits = 13;
-          else if(b_to_shift[11:0] == 0) 
-            shift_bits = 12;
-          else if(b_to_shift[10:0] == 0) 
-            shift_bits = 11;
-          else if(b_to_shift[9:0] == 0) 
-            shift_bits = 10;
-          else if(b_to_shift[8:0] == 0) 
-            shift_bits = 9;
-          else if(b_to_shift[7:0] == 0) 
-            shift_bits = 8;
-          else if(b_to_shift[6:0] == 0) 
-            shift_bits = 7;
-          else if(b_to_shift[5:0] == 0) 
-            shift_bits = 6;
-          else if(b_to_shift[4:0] == 0) 
-            shift_bits = 5;
-          else if(b_to_shift[3:0] == 0) 
-            shift_bits = 4;
-          else if(b_to_shift[2:0] == 0) 
-            shift_bits = 3;
-          else if(b_to_shift[1:0] == 0) 
-            shift_bits = 2;
         end
         next_counter = counter + shift_bits;
       end
@@ -334,6 +213,98 @@ module control_alt
       counter <= next_counter;
     end
   end
+
+endmodule
+
+module lab1_imul_IntMulAlt
+(
+  input  logic        clk,
+  input  logic        reset,
+
+  input  logic        istream_val,
+  output logic        istream_rdy,
+  input  logic [63:0] istream_msg,
+
+  output logic        ostream_val,
+  input  logic        ostream_rdy,
+  output logic [31:0] ostream_msg
+);
+
+  // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  // Instantiate datapath and control models here and then connect them
+  // together.
+  // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+  logic [31:0]  b_to_shift;   // for control unit use
+  logic [5:0]   shift_bits;   // set by control unit
+
+  logic         add_mux_sel;      // set by control unit
+  logic         result_en;        // set by control unit
+  logic         result_mux_sel;   // set by control unit
+  logic         a_mux_sel;        // set by control unit
+  logic         b_mux_sel;        // set by control unit
+
+  dpath_Alt datapath(
+    .clk            (clk),
+    .reset          (reset),
+    .istream_msg    (istream_msg),
+    .ostream_msg    (ostream_msg),
+    .b_mux_sel      (b_mux_sel),
+    .a_mux_sel      (a_mux_sel),
+    .result_mux_sel (result_mux_sel),
+    .result_en      (result_en),
+    .add_mux_sel    (add_mux_sel),
+    .shift_bits     (shift_bits),
+    .b_to_shift     (b_to_shift)
+  ); 
+
+  // -----------------------------
+
+  control_Alt control_unit(
+    .clk            (clk),
+    .reset          (reset),
+    .istream_val    (istream_val),
+    .ostream_rdy    (ostream_rdy),
+    .b_to_shift     (b_to_shift),
+    .ostream_val    (ostream_val),
+    .istream_rdy    (istream_rdy),
+    .b_mux_sel      (b_mux_sel),
+    .a_mux_sel      (a_mux_sel),
+    .result_mux_sel (result_mux_sel),
+    .result_en      (result_en),
+    .add_mux_sel    (add_mux_sel),
+    .shift_bits     (shift_bits)
+  );
+
+  //----------------------------------------------------------------------
+  // Line Tracing
+  //----------------------------------------------------------------------
+
+  `ifndef SYNTHESIS
+
+  logic [`VC_TRACE_NBITS-1:0] str;
+  `VC_TRACE_BEGIN
+  begin
+
+    $sformat( str, "%x", istream_msg );
+    vc_trace.append_val_rdy_str( trace_str, istream_val, istream_rdy, str );
+
+    vc_trace.append_str( trace_str, "(" );
+
+    // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    // Add additional line tracing using the helper tasks for
+    // internal state including the current FSM state.
+    // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+    vc_trace.append_str( trace_str, ")" );
+
+    $sformat( str, "%x", ostream_msg );
+    vc_trace.append_val_rdy_str( trace_str, ostream_val, ostream_rdy, str );
+
+  end
+  `VC_TRACE_END
+
+  `endif /* SYNTHESIS */
 
 endmodule
 
