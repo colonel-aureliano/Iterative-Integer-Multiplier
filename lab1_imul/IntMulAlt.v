@@ -295,6 +295,16 @@ module lab1_imul_IntMulAlt
     // Add additional line tracing using the helper tasks for
     // internal state including the current FSM state.
     // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+    if (ostream_val) begin
+      $sformat( str, "%b", shift_bits );
+      vc_trace.append_str( trace_str, str );
+      
+      $sformat( str, "%d", ostream_msg );
+      vc_trace.append_str( trace_str, str );
+    end
+    else begin
+      vc_trace.append_str( trace_str, "                              ") ;
+    end
 
     vc_trace.append_str( trace_str, ")" );
 
