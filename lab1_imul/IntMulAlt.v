@@ -10,10 +10,6 @@
 `include "vc/regs.v"
 `include "IntMulHelper.v"
 
-//=========================================================================
-// Integer Multiplier Variable-Latency Implementation
-//=========================================================================
-
 // verilator lint_off WIDTHEXPAND
 
 module dpath_Alt
@@ -290,25 +286,26 @@ module lab1_imul_IntMulAlt
     vc_trace.append_val_rdy_str( trace_str, istream_val, istream_rdy, str );
 
     vc_trace.append_str( trace_str, "(" );
-
-    // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    // Add additional line tracing using the helper tasks for
-    // internal state including the current FSM state.
-    // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     if (ostream_val) begin
-      $sformat( str, "%b", shift_bits );
+      $sformat( str, "%d", control_base.current_state );
       vc_trace.append_str( trace_str, str );
-      
+
       $sformat( str, "%d", ostream_msg );
       vc_trace.append_str( trace_str, str );
     end
-    else begin
-      vc_trace.append_str( trace_str, "                              ") ;
-    end
+    else if (result_en && add_mux_sel == 1) begin
+       $sformat( str, "%d + ", ostream_msg );
+      vc_trace.append_str( trace_str, str );
+
+      $sformat( str, "%d = ", data_base.a_to_shift );
+      vc_trace.append_str( trace_str, str );
+
+      $sformat( str, "%d", data_base.add_mux_out );
+      vc_trace.append_str( trace_str, str );
+    end else vc_trace.append_str( trace_str, "                              ") ;
 
     vc_trace.append_str( trace_str, ")" );
 
-    $sformat( str, "%x", ostream_msg );
     vc_trace.append_val_rdy_str( trace_str, ostream_val, ostream_rdy, str );
 
   end

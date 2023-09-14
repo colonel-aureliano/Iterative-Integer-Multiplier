@@ -18,7 +18,7 @@
 // Testbench defines
 //------------------------------------------------------------------------
 
-localparam NUM_TESTS = 100;
+localparam NUM_TESTS = 56;
 
 localparam  INPUT_TEST_SIZE = 64;
 localparam OUTPUT_TEST_SIZE = 32;
@@ -200,40 +200,38 @@ module top( input logic clk ,  input logic linetrace );
     logic [31:0] rd1;
     logic [31:0] rd2;
 
-    if (`"`DESIGN`" == "IntMulAlt") begin
-      // Alternative Design specific tests
-      // Inputs designed to be of certain pattern
-      test_case_auto_calc_result(2938209, 32'b1000_0000_0001_0000_0001_0000_0000_0001);
-      test_case_auto_calc_result(-1, 32'b1000_0000_0000_0000_0100_0010_0000_0010);
-      test_case_auto_calc_result(8, 32'b0000_0000_0000_0000_0001_0000_0000_0000);
-      test_case_auto_calc_result(2,32'b0001_0000_0000_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(1,32'b0000_1000_0000_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(-10,32'b0000_0100_0000_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(-20,32'b0000_0010_0000_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(-5,32'b0000_0001_0000_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(1,32'b0000_0000_1000_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(2,32'b0000_0000_0100_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(3,32'b1000_0000_0010_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(1,32'b1000_0000_0001_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(2,32'b1000_0000_0000_1000_0000_0000_0000_0000);
-      test_case_auto_calc_result(-9,32'b1000_0000_0010_0100_0000_0000_0000_0000);
-      test_case_auto_calc_result(-3,32'b1000_0000_0010_0010_0000_0000_0000_0000);
-      test_case_auto_calc_result(1,32'b0010_0000_0000_0001_0000_0000_0000_0000);
-      test_case_auto_calc_result(2,32'b1000_0000_0010_0000_1000_0000_0000_0000);
-      test_case_auto_calc_result(2,32'b0010_0000_0000_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(2,32'b1100_0000_0010_0000_0000_0000_0000_0000);
-      test_case_auto_calc_result(4,32'b1100_0000_0001_0000_0000_0000_0100_0000);
-      test_case_auto_calc_result(4,32'b1100_0000_0001_0000_0100_0000_0000_0000);
-      test_case_auto_calc_result(1,32'b1100_0000_0000_0000_0000_0000_0000_0000);
+    // Alternative Design specific tests
+    // Inputs designed to be of certain pattern
+    test_case_auto_calc_result(2938209, 32'b1000_0000_0001_0000_0001_0000_0000_0001);
+    test_case_auto_calc_result(-1, 32'b1000_0000_0000_0000_0100_0010_0000_0010);
+    test_case_auto_calc_result(8, 32'b0000_0000_0000_0000_0001_0000_0000_0000);
+    test_case_auto_calc_result(2,32'b0001_0000_0000_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(1,32'b0000_1000_0000_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(-10,32'b0000_0100_0000_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(-20,32'b0000_0010_0000_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(-5,32'b0000_0001_0000_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(1,32'b0000_0000_1000_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(2,32'b0000_0000_0100_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(3,32'b1000_0000_0010_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(1,32'b1000_0000_0001_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(2,32'b1000_0000_0000_1000_0000_0000_0000_0000);
+    test_case_auto_calc_result(-9,32'b1000_0000_0010_0100_0000_0000_0000_0000);
+    test_case_auto_calc_result(-3,32'b1000_0000_0010_0010_0000_0000_0000_0000);
+    test_case_auto_calc_result(1,32'b0010_0000_0000_0001_0000_0000_0000_0000);
+    test_case_auto_calc_result(2,32'b1000_0000_0010_0000_1000_0000_0000_0000);
+    test_case_auto_calc_result(2,32'b0010_0000_0000_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(2,32'b1100_0000_0010_0000_0000_0000_0000_0000);
+    test_case_auto_calc_result(4,32'b1100_0000_0001_0000_0000_0000_0100_0000);
+    test_case_auto_calc_result(4,32'b1100_0000_0001_0000_0100_0000_0000_0000);
+    test_case_auto_calc_result(1,32'b1100_0000_0000_0000_0000_0000_0000_0000);
 
-      $display("Tests with some input bits masked off");
-      mask_test_case( 32'd46_340, -32'd46_343, "low" );
-      mask_test_case( 32'd782,     32'd613, "middle");
-      mask_test_case( 32'd0,      -32'd993, "high" );
-      mask_test_case( -32'd1,    -32'd933803, "low" );
-      mask_test_case( 32'd0,      32'd2837, "middle");
-      mask_test_case( -32'd1,      32'd64293, "high" );
-    end
+    $display("Tests with some input bits masked off");
+    mask_test_case( 32'd46_340, -32'd46_343, "low" );
+    mask_test_case( 32'd782,     32'd613, "middle");
+    mask_test_case( 32'd0,      -32'd993, "high" );
+    mask_test_case( -32'd1,    -32'd933803, "low" );
+    mask_test_case( 32'd0,      32'd2837, "middle");
+    mask_test_case( -32'd1,      32'd64293, "high" );
 
     // Test cases
 

@@ -2,7 +2,6 @@
 // Integer Multiplier Fixed-Latency Implementation
 //========================================================================
 
-
 `ifndef LAB1_IMUL_INT_MUL_BASE_V
 `define LAB1_IMUL_INT_MUL_BASE_V
 
@@ -10,9 +9,6 @@
 `include "vc/regs.v"
 `include "vc/muxes.v"
 
-// ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// Define datapath and control unit here.
-// '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 module lab1_imul_ControlBase
 (
   input  logic  clk,
@@ -276,11 +272,6 @@ module lab1_imul_IntMulBase
     vc_trace.append_val_rdy_str( trace_str, istream_val, istream_rdy, str );
 
     vc_trace.append_str( trace_str, "(" );
-
-    // ''' LAB TASK ''''''''''''''''''''''''''''''''''''''''''''''''''''''
-    // Add additional line tracing using the helper tasks for
-    // internal state including the current FSM state.
-    // '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
     if (ostream_val) begin
       $sformat( str, "%d", control_base.current_state );
       vc_trace.append_str( trace_str, str );
@@ -288,13 +279,19 @@ module lab1_imul_IntMulBase
       $sformat( str, "%d", ostream_msg );
       vc_trace.append_str( trace_str, str );
     end
-    else begin
-      vc_trace.append_str( trace_str, "                              ") ;
-    end
+    else if (result_en && add_mux_sel == 1) begin
+       $sformat( str, "%d + ", ostream_msg );
+      vc_trace.append_str( trace_str, str );
+
+      $sformat( str, "%d = ", data_base.a_to_shift );
+      vc_trace.append_str( trace_str, str );
+
+      $sformat( str, "%d", data_base.add_mux_out );
+      vc_trace.append_str( trace_str, str );
+    end else vc_trace.append_str( trace_str, "                              ") ;
 
     vc_trace.append_str( trace_str, ")" );
 
-    $sformat( str, "%x", ostream_msg );
     vc_trace.append_val_rdy_str( trace_str, ostream_val, ostream_rdy, str );
 
   end
