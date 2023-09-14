@@ -1,7 +1,7 @@
 //========================================================================
-// tb_IntMul
+// tb_IntMulUVM
 //========================================================================
-// A basic Verilog test bench for the multiplier
+// A UVM-inspired Verilog test bench for the multiplier
 
 `default_nettype none
 `timescale 1ps/1ps
@@ -11,14 +11,27 @@
 `endif
 
 `include `"`DESIGN.v`"
-`include "vc/trace.v"
+`include "vc/TestRandDelaySource.v"
+`include "vc/TestRandDelaySink.v"
+
+//------------------------------------------------------------------------
+// Testbench defines
+//------------------------------------------------------------------------
+
+localparam NUM_TESTS = 12;
+
+localparam  INPUT_TEST_SIZE = 64;
+localparam OUTPUT_TEST_SIZE = 32;
+
+localparam MAX_SRC_DELAY = 32'b0;
+localparam MAX_SNK_DELAY = 32'b0;
 
 //------------------------------------------------------------------------
 // Top-level module
 //------------------------------------------------------------------------
 
-module top(  input logic clk, input logic linetrace );
-
+module top( input logic clk ,  input logic linetrace );
+  
   // DUT signals
   logic        reset;
 
@@ -30,46 +43,136 @@ module top(  input logic clk, input logic linetrace );
   logic        ostream_val;
   logic [31:0] ostream_msg;
 
-  // Testbench signals
-  logic        istream_val_f;
-  logic        ostream_rdy_f;
+  // Source and sink messages
 
-  logic [31:0] istream_msg_a;
-  logic [31:0] istream_msg_b;
+  logic [  INPUT_TEST_SIZE-1:0 ] src_msgs [ NUM_TESTS-1:0 ];
+  logic [ OUTPUT_TEST_SIZE-1:0 ] snk_msgs [ NUM_TESTS-1:0 ];
 
-  // Form istream_msg
-  always_comb begin
-    istream_msg[63:32] = istream_msg_a;
-    istream_msg[31: 0] = istream_msg_b;
-  end
+  // Signals to indicate completion
 
+  logic src_done;
+  logic snk_done;
+  
   //----------------------------------------------------------------------
   // Module instantiations
   //----------------------------------------------------------------------
-  
-  // Instantiate the multiplier
 
-  lab1_imul_`DESIGN imul
-  (
-    .clk            (clk),
-    .reset          (reset),
-    .istream_val    (istream_val),
-    .istream_rdy    (istream_rdy),
-    .istream_msg    (istream_msg),
-    .ostream_val    (ostream_val),
-    .ostream_rdy    (ostream_rdy),
-    .ostream_msg    (ostream_msg)
+  // Test source
+
+  vc_TestRandDelaySource 
+  #(
+    .p_msg_nbits ( INPUT_TEST_SIZE ),
+    .p_num_msgs  (       NUM_TESTS )
+  ) src (
+    .clk         (             clk ),
+    .reset       (           reset ),
+
+    .max_delay   (   MAX_SRC_DELAY ),
+
+    .val         (     istream_val ),
+    .rdy         (     istream_rdy ),
+    .msg         (     istream_msg ),
+
+    .done        (        src_done )
   );
 
-  initial begin 
-    while(1) begin
-      @(negedge clk);  
-      if (linetrace) begin
-           imul.display_trace;
-      end
-    end 
-    $stop;
-   end
+  assign src.src.m = src_msgs;
+  
+  // DUT
+  
+  lab1_imul_`DESIGN dut
+  (
+    .clk         (       clk   ),
+    .reset       (       reset ),
+
+    // Input stream
+
+    .istream_val ( istream_val ),
+    .istream_rdy ( istream_rdy ),
+    .istream_msg ( istream_msg ),
+
+    // Output stream
+
+    .ostream_val ( ostream_val ),
+    .ostream_rdy ( ostream_rdy ),
+    .ostream_msg ( ostream_msg )
+  );
+
+  // Test sink
+
+  vc_TestRandDelaySink
+  #(
+    .p_msg_nbits ( OUTPUT_TEST_SIZE ),
+    .p_num_msgs  (        NUM_TESTS )
+  ) sink (
+    .clk         (              clk ),
+    .reset       (            reset ),
+
+    .max_delay   (    MAX_SNK_DELAY ),
+
+    .val         (      ostream_val ),
+    .rdy         (      ostream_rdy ),
+    .msg         (      ostream_msg ),
+
+    .done        (         snk_done )
+  );
+
+  assign sink.sink.m = snk_msgs;
+
+  //----------------------------------------------------------------------
+  // Task for adding test cases
+  //----------------------------------------------------------------------
+
+  task test_case(
+    input logic [  INPUT_TEST_SIZE-1:0 ] src_msg,
+    input logic [ OUTPUT_TEST_SIZE-1:0 ] snk_msg
+  );
+  begin
+    integer idx = 0;
+
+    // Add messages to test arrays
+    src_msgs[ idx ] = src_msg;
+    snk_msgs[ idx ] = snk_msg;
+
+    idx = idx + 1;
+  end
+  endtask
+
+  //----------------------------------------------------------------------
+  // Test cases
+  //----------------------------------------------------------------------
+  // Don't forget to change NUM_TESTS above when adding new tests!
+
+  initial begin
+
+    // Test cases
+
+    test_case( { 32'd1, 32'd1 },  32'd1 );
+    test_case( { 32'd2, 32'd2 },  32'd4 );
+    test_case( { 32'd3, 32'd2 },  32'd6 );
+    test_case( { 32'd20, 32'd30 },  32'd600 );
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Combinations of multiplying zero, one, and negative one
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    $display("Combinations of multiplying zero, one, and negative one");
+    test_case( {  32'd0,  32'd0 },  32'd0 );
+    test_case( {  32'd0,  32'd1 },  32'd0 );
+    test_case( { -32'd1, 32'd0 },   32'd0 );
+    test_case( { -32'd1, 32'd7 },   -32'd7 );
+    test_case( { -32'd1, 32'd2_147_483_647 }, -32'd2_147_483_647 );
+    test_case( {  32'd1, 32'd2_147_483_647 }, 32'd2_147_483_647 );
+    test_case( { -32'd1, 32'd2_147_483_647 }, -32'd2_147_483_647 );
+    test_case( { -32'd1, 32'd2_147_483_648 }, -32'd2_147_483_648 );
+
+    // test_case(1, -1);
+    // test_case(-1, 7);
+    // test_case(0, 2_147_483_647);
+    // test_case(1, 2_147_483_647);
+    // test_case(-1, 2_147_483_647);
+    // test_case(-1, 2_147_483_648);
+
+  end
 
   //----------------------------------------------------------------------
   // Run the Test Bench
@@ -77,230 +180,55 @@ module top(  input logic clk, input logic linetrace );
 
   initial begin
 
-    $display("Start of Testbench");
-    // Send reset and init values of all signals
-    reset         = 1;
-    istream_msg_a = 0;
-    istream_msg_b = 0;
-    istream_val   = 0;
-
-    // After a moment, de-assert reset
+    $display( "Starting tb_IntMulBase_full..." );
+    reset = 1;
+    
+    // Wait a bit, then de-assert reset on negedge
     #10 
+    @( negedge clk );
     reset = 0;
 
-    //--------------------------------------------------------------------
-    // Test cases
-    //--------------------------------------------------------------------
+    // Wait for the test to finish
+    while( !snk_done ) @( negedge clk );
 
-    // Align test bench with negedge so that it looks better
-    #10
-    @(negedge clk); 
+    // Check that the source is also done
+    if( !src_done )
+      $error( "Failed: Our sink received more messages than our source has!" );
+    else
+      $display( "Success: The testbench has passed!" );
 
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Test #1
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    $display("Example Test #1");
-
-    //Set inputs
-    istream_msg_a = 32'd2;
-    istream_msg_b = 32'd3;
-    istream_val   =  1'b1;
-    ostream_rdy   =  1'b1;
-
-    while(!istream_rdy) @(negedge clk); // Wait until ready is asserted
-    @(negedge clk); // Move to next cycle.
-    
-    istream_val = 1'b0; // Deassert ready input
-    if(!ostream_val) @(ostream_val);// Wait for response
-    @(negedge clk); // read at low clk
-    
-    // Check the result
-    assert ( 6 == ostream_msg) begin
-      pass(); // Book keeping
-      $display( "OK: in0 = %d, in1 = %d, out = %d", 
-                istream_msg_a, istream_msg_b, ostream_msg );
-    end
-    else begin
-      fail(); // Book keeping
-      $error( "Failed: in0 = %d, in1 = %d, out = %d", 
-              istream_msg_a, istream_msg_b, ostream_msg );
-    end
-   
-    #10
-    @(negedge clk);
-
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Test #2
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    $display("Example Test #2");
-    
-    //Set inputs
-    istream_msg_a = 32'd4;
-    istream_msg_b = 32'd5;
-    istream_val   =  1'b1;
-    ostream_rdy   =  1'b1;
-
-    while(!istream_rdy) @(negedge clk); // Wait until ready is asserted
-    @(negedge clk); // Move to next cycle.
-    
-    istream_val = 1'b0; // Deassert ready input
-    if(!ostream_val) @(ostream_val);// Wait for response
-    @(negedge clk); // read at low clk
-    
-    // Check the result
-    assert ( 20 == ostream_msg) begin
-      pass(); // Book keeping
-      $display( "OK: in0 = %d, in1 = %d, out = %d", 
-                istream_msg_a, istream_msg_b, ostream_msg );
-    end
-    else begin
-      fail(); // Book keeping
-      $error( "Failed: in0 = %d, in1 = %d, out = %d", 
-              istream_msg_a, istream_msg_b, ostream_msg );
-    end
-   
-    #10
-    @(negedge clk);
-
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Test #3
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    $display("Example Test #3");
-
-    //Set inputs
-    istream_msg_a = 32'd3;
-    istream_msg_b = 32'd4;
-    istream_val   =  1'b1;
-    ostream_rdy   =  1'b1;
-    
-    while(!istream_rdy) @(negedge clk); // Wait until ready is asserted
-    @(negedge clk); // Move to next cycle.
-    
-    istream_val = 1'b0; // Deassert ready input
-    if(!ostream_val) @(ostream_val);// Wait for response
-    @(negedge clk); // read at low clk
-    
-    // Check the result
-    assert ( 12 == ostream_msg) begin
-      pass(); // Book keeping
-      $display( "OK: in0 = %d, in1 = %d, out = %d", 
-                istream_msg_a, istream_msg_b, ostream_msg );
-    end
-    else begin
-      fail(); // Book keeping
-      $error( "Failed: in0 = %d, in1 = %d, out = %d", 
-              istream_msg_a, istream_msg_b, ostream_msg );
-    end
-   
-    #10
-    @(negedge clk);
-
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Test #4
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    $display("Example Test #4");
-
-    //Set inputs
-    istream_msg_a = 32'd10;
-    istream_msg_b = 32'd13;
-    istream_val   =  1'b1;
-    ostream_rdy   =  1'b1;
-    
-    while(!istream_rdy) @(negedge clk); // Wait until ready is asserted
-    @(negedge clk); // Move to next cycle.
-    
-    istream_val = 1'b0; // Deassert ready input
-    if(!ostream_val) @(ostream_val);// Wait for response
-    @(negedge clk); // read at low clk
-    
-    // Check the result
-    assert ( 130 == ostream_msg) begin
-      pass(); // Book keeping
-      $display( "OK: in0 = %d, in1 = %d, out = %d", 
-                istream_msg_a, istream_msg_b, ostream_msg );
-    end
-    else begin
-      fail(); // Book keeping
-      $error( "Failed: in0 = %d, in1 = %d, out = %d", 
-              istream_msg_a, istream_msg_b, ostream_msg );
-    end
-   
-    #10
-    @(negedge clk);
-
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Test #5
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-    $display("Example Test #5");
-    
-    // We can simplify Testbench with tasks (declared below)
-    test_task(8,7);
-
-    #10;
-
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Random Tests
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
-    $display("Random Test");
-    for( integer x = 0; x < 5; x++ ) begin
-      test_task( $random, $random );
-    end
-
-    // Finish the testbench
-    
-    @(negedge clk);
-    $display("Testbench finished at %d cycles", ($time()-10)/2 );
-    
-    // Delay for a better waveform
-    #10;
+    // Delay for a bit for a better waveform
+    #100
     $finish;
-
   end
 
-  //--------------------------------------------------------------------
-  // test_task definition
-  //--------------------------------------------------------------------
-  // Here is a tasks that test the DUT when given 2 numbers a and b 
-  //
-  // Notice that the functionality is identical to the examples above
+  //----------------------------------------------------------------------
+  // Timeout
+  //----------------------------------------------------------------------
+  // This is to ensure that our test eventually finishes, even if the sink
+  // isn't receiving messages
 
-  task test_task( [31:0] a,  [31:0] b );
-  begin
-
-    // Change inputs at the negedge
-    @(negedge clk);
-
-    // Set inputs
-    istream_msg_a = a;
-    istream_msg_b = b;
-    istream_val   = 1'b1;
-    ostream_rdy   = 1'b0;
-
-    while(!istream_rdy) @(negedge clk); // Wait until ready is asserted
-    @(negedge clk); // Move to next cycle.
-    
-    istream_val = 1'b0; // No more ready input
-    ostream_rdy = 1'b1; // Ready for output
-
-    if(!ostream_val) @(ostream_val);// Wait for response
-    
-    // Check the result
-    assert ( (a * b) == ostream_msg) begin
-      pass(); // Book keeping
-      $display( "OK: in0 = %d, in1 = %d, out = %d", a, b, ostream_msg );
-    end
-    else begin
-      fail(); // Book keeping
-      $error( "Failed: in0 = %d, in1 = %d, out = %d", a, b, ostream_msg );
+  initial begin
+    for( integer i = 0; i < 1000000; i = i + 1 ) begin
+      @( negedge clk );
     end
 
-    @(negedge clk);
+    $error( "TIMEOUT: Testbench didn't finish in time" );
+    $finish;
   end
-  endtask
+
+  //----------------------------------------------------------------------
+  // Tracing
+  //----------------------------------------------------------------------
+
+  initial begin 
+    while(1) begin
+      @(negedge clk);  
+      if (linetrace) begin
+           dut.display_trace;
+      end
+    end 
+    $stop;
+  end
+
 endmodule

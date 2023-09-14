@@ -79,11 +79,11 @@ export VERILATOR_ROOT
 	VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 	VERILATOR_COVERAGE = $(VERILATOR_ROOT)/bin/verilator_coverage
 endif
-VERSION= 1.1 
+VERSION= 1.6
 
 VERILATOR_FLAGS =
 VERILATOR_FLAGS += -cc --exe
-VERILATOR_FLAGS += -O2 -x-assign 0
+VERILATOR_FLAGS += -O0 -x-assign 0
 VERILATOR_FLAGS += -Wall
 VERILATOR_FLAGS += --trace-fst
 VERILATOR_FLAGS += --assert
@@ -91,6 +91,11 @@ VERILATOR_FLAGS += --timing
 VERILATOR_FLAGS +=  -y ..
 VERILATOR_FLAGS +=  -Wno-DECLFILENAME
 VERILATOR_FLAGS +=  -Wno-UNUSEDSIGNAL
+VERILATOR_FLAGS +=  -Wno-VARHIDDEN
+VERILATOR_FLAGS +=  -Wno-UNDRIVEN
+VERILATOR_FLAGS +=  -Wno-GENUNNAMED
+VERILATOR_FLAGS +=  -Wno-UNUSEDPARAM
+VERILATOR_FLAGS +=  -Wno-PINCONNECTEMPTY
 VERILATOR_FLAGS +=  --assert
 
 SOURCES := $(wildcard  obj_dir/*/tb_*) $(wildcard  obj_dir/*/ub_*)
@@ -124,6 +129,7 @@ UTB := $(wildcard  ./utb_*)
 ######################################################################
 
 .ONESHELL:
+.PRECIOUS: %.v %.sv
 
 default: run-all
 $(SOURCES) $(UTB_SOURCES): FORCE
@@ -134,8 +140,8 @@ run-all: check-setup
 		$(MAKE) run-design DESIGN_CONFIG=$$designs --no-print-directory; \
 	done; 
 	for utb in $(UTB) ; do \
-		mkdir -p obj_dir/$$utb; \
-		$(MAKE) obj_dir/$$utb --no-print-directory; \
+		mkdir -p obj_dir/$$(basename $$utb); \
+		$(MAKE) obj_dir/$$(basename $$utb) --no-print-directory; \
 	done;
 	$(MAKE) coverage-report --no-print-directory
 	$(MAKE) show-results --no-print-directory
@@ -153,7 +159,7 @@ run-design: check-setup
 		done; \
 	done; 
 	
-ub_%.v utb_%.v tb_%.v: FORCE  check-setup
+ub_%.v utb_%.v tb_%.v: FORCE  check-setup 
 
 	@echo
 	@echo "-- VERILATE ----------------"
@@ -175,7 +181,7 @@ ub_%.v utb_%.v tb_%.v: FORCE  check-setup
 	@echo "-- DONE --------------------"
 	printf "To see waveforms, open waves/%s.waves.fst in a waveform viewer" $(DESIGN).$(basename $(@F) .v)
 	@echo
-
+	
 coverage-report: FORCE check-setup
 	@echo
 	@echo "-- COVERAGE ----------------"
@@ -186,7 +192,9 @@ coverage-report: FORCE check-setup
 	@echo "-- GENHTML --------------------"
 	$(GENHTML) logs/coverage.info --output-directory logs/$(COVERAGE)/html
 
-	
+lab1_exist=$(wildcard lab1_imul/.)
+lab2_exist=$(wildcard lab2_proc/.)
+tut4_exist=$(wildcard tut4_verilog/.)
 show-results: FORCE check-setup
 	@echo
 	@echo "-- Results ----------------"
@@ -201,9 +209,25 @@ show-config:
 setup: real
 	@echo Removing all symlink
 	@find . -maxdepth 10 -type l -delete
-	@echo Creating symlink for lab1_imul
-	@ln -s ../Makefile lab1_imul/Makefile
-	@ln -s ../verilator.cpp lab1_imul/verilator.cpp
+	
+ifneq ($(lab1_exist), ) 
+		@echo Creating symlink for lab1_imul
+		@ln -s ../Makefile lab1_imul/Makefile 
+		@ln -s ../verilator.cpp lab1_imul/verilator.cpp 
+endif 
+	
+ifneq ($(lab2_exist),) 
+		@echo Creating symlink for lab2_proc
+		@ln -s ../Makefile lab2_proc/Makefile
+		@ln -s ../verilator.cpp lab2_proc/verilator.cpp
+endif 
+
+ifneq ($(tut4_exist),) 
+		@echo Creating symlink for tut4_verilog
+		@ln -s ../Makefile tut4_verilog/Makefile
+		@ln -s ../verilator.cpp tut4_verilog/verilator.cpp
+endif 
+
 	@echo v.$(VERSION) "("$$(sha1sum Makefile)")" > .ece-4750-setup
 	@echo "("$$(sha1sum verilator.cpp)")" >> .ece-4750-setup
 	find . -maxdepth 1 -mindepth 1 -type d -exec ln -s ../.ece-4750-setup {}/.ece-4750-setup \;
@@ -220,7 +244,7 @@ check-setup: FORCE
 	@a=$$(echo v.$(VERSION) "("$$(sha1sum Makefile)")");\
 	if [ "$$a" != "$$(head -n 1 .ece-4750-setup)" ]; then \
 		echo "The makefile script has been modified since setup!";\
-		echo "Please revert your changes, or rerun setup of the changes are intended. ";\
+		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
 		echo "Your current version is " $$a
 		echo "Your setup version is  " $$(head -n 1 .ece-4750-setup)
@@ -229,7 +253,7 @@ check-setup: FORCE
 	@a=$$(echo "("$$(sha1sum verilator.cpp)")");\
 	if [ "$$a" != "$$(tail -n 1 .ece-4750-setup)" ]; then \
 		echo "The verilator.cpp file has been modified since setup!";\
-		echo "Please revert your changes, or rerun setup of the changes are intended. ";\
+		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
 		echo "Your current version is " $$a
 		echo "Your setup version is  " $$(tail -n 1 .ece-4750-setup)
@@ -240,7 +264,7 @@ check-setup-root-ignore:
 	@a=$$(echo v.$(VERSION) "("$$(sha1sum Makefile)")");\
 	if [ "$$a" != "$$(head -n 1 .ece-4750-setup)" ]; then \
 		echo "The makefile script has been modified since setup!";\
-		echo "Please revert your changes, or rerun setup of the changes are intended. ";\
+		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
 		echo "Your current version is " $$a
 		echo "Your setup version is  " $$(head -n 1 .ece-4750-setup)
@@ -249,7 +273,7 @@ check-setup-root-ignore:
 	@a=$$(echo "("$$(sha1sum verilator.cpp)")");\
 	if [ "$$a" != "$$(tail -n 1 .ece-4750-setup)" ]; then \
 		echo "The verilator.cpp file has been modified since setup!";\
-		echo "Please revert your changes, or rerun setup of the changes are intended. ";\
+		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
 		echo "Your current version is " $$a
 		echo "Your setup version is  " $$(tail -n 1 .ece-4750-setup)
@@ -298,6 +322,6 @@ help:
 	@head -n 60 Makefile 
 
 clean:
-	-rm -rf obj_dir logs *.log *.dmp *.vpd coverage.dat core* results waves
+	-rm -rf obj_dir logs *.log *.dmp *.vpd coverage.dat core results waves
 
 FORCE:
