@@ -156,7 +156,7 @@ module control_Alt
     if(istream_rdy && istream_val && state == STATE_IDLE)begin
       next_state = STATE_CALC;
     end
-    if(counter >= 32 && state == STATE_CALC) begin
+    if(counter >= 31 && state == STATE_CALC) begin
       next_state = STATE_DONE;
     end
     if(ostream_rdy && state == STATE_DONE) begin

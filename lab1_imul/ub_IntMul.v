@@ -3,11 +3,21 @@
 //========================================================================
 // A basic Verilog test bench for the multiplier
 
+// TYPE = Random / Alt
+// Where Random means to test the module on 100 random inputs
+// Alt means to generate inputs that target the alternative design
+// and aims to exhibit the better performance of the alternative
+// design relative to the baseline design.
+
 `default_nettype none
 `timescale 1ps/1ps
 
 `ifndef DESIGN
   `define DESIGN IntMulBase
+`endif
+
+`ifndef TYPE
+  `define TYPE Random
 `endif
 
 `include `"`DESIGN.v`"
@@ -88,15 +98,116 @@ module top(  input logic clk, input logic linetrace );
     #10 
     reset = 0;
 
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    // Random Micro-benchmark
-    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    
-    $display("Random Test");
-    for( integer x = 0; x < 100; x++ ) begin
-      test_task( $random, $random );
-    end
-
+    if (`"`TYPE`" == "Random") begin
+      $display("Random Test"); // Random Micro-benchmark
+      for( integer x = 0; x < 100; x++ ) begin
+        test_task( $random, $random );
+      end
+    end else begin
+      $display("Alternative Design Targeted Test"); 
+      // Designed to accentuate the performance of alternative design
+      // over baseline design
+      test_task(7,32'b10);
+      test_task(16,32'b10);
+      test_task(8,32'b10);
+      test_task(8,32'b1);
+      test_task(3,32'b1);
+      test_task(7,32'b100000000000000000000);
+      test_task(23,32'b10);
+      test_task(13,32'b10000);
+      test_task(0,32'b100000000000000000000000);
+      test_task(13,32'b10000000);
+      test_task(19,32'b10000000000000000000000000000000);
+      test_task(23,32'b100000000000000);
+      test_task(4,32'b10);
+      test_task(18,32'b10000000);
+      test_task(4,32'b1);
+      test_task(16,32'b10000000000000000000000000000000);
+      test_task(3,32'b10000000000000000000000000000);
+      test_task(13,32'b100000000000000000);
+      test_task(5,32'b100000);
+      test_task(4,32'b10000000000000000000000000);
+      test_task(10,32'b100000000000000000000000000000);
+      test_task(22,32'b1000000);
+      test_task(24,32'b10000000000000);
+      test_task(28,32'b10000000000000000);
+      test_task(19,32'b1000000000000000000000000);
+      test_task(5,32'b1);
+      test_task(3,32'b10000000000000000000000);
+      test_task(26,32'b1000000000000000);
+      test_task(20,32'b1000000000000000000);
+      test_task(27,32'b1000000);
+      test_task(10,32'b1000000000000);
+      test_task(13,32'b100000000000000000000000);
+      test_task(4,32'b100000000000000000000000000000);
+      test_task(1,32'b1000);
+      test_task(21,32'b10000000000);
+      test_task(9,32'b1000000000000000000000);
+      test_task(11,32'b10000000000000000);
+      test_task(10,32'b10000000000000000000000000000000);
+      test_task(1,32'b100000000000000);
+      test_task(18,32'b100000000000000000000000000000);
+      test_task(23,32'b10000000000000000000000000);
+      test_task(1,32'b1);
+      test_task(11,32'b1000000000000000);
+      test_task(28,32'b100000000000000);
+      test_task(27,32'b100000000);
+      test_task(7,32'b1000000);
+      test_task(12,32'b10000000000000000000000);
+      test_task(14,32'b1000);
+      test_task(27,32'b1);
+      test_task(24,32'b10000000000000);
+      test_task(7,32'b1000000000000000000000000000);
+      test_task(5,32'b100000000000000000000);
+      test_task(13,32'b100);
+      test_task(25,32'b10000000);
+      test_task(23,32'b10000000000000);
+      test_task(28,32'b1000000000000);
+      test_task(15,32'b10);
+      test_task(25,32'b100000000000000000000000000000);
+      test_task(11,32'b10000000000000000000000000000000);
+      test_task(0,32'b1000000000000000000000000000);
+      test_task(21,32'b100000000000000000000000000000);
+      test_task(5,32'b10000000000000000000000000);
+      test_task(14,32'b1000000000000000000000000000000);
+      test_task(20,32'b10000000000000000000000000);
+      test_task(17,32'b10000000000000000000000000000000);
+      test_task(10,32'b100000000000000000000000000000);
+      test_task(4,32'b100000);
+      test_task(21,32'b10000000000000);
+      test_task(1,32'b100000000000);
+      test_task(20,32'b100000000000000000000000000);
+      test_task(18,32'b100000);
+      test_task(2,32'b10000000000000000000000);
+      test_task(19,32'b100000000000000000000);
+      test_task(5,32'b10000000000000000000000000000);
+      test_task(12,32'b1);
+      test_task(28,32'b10000000000000000000);
+      test_task(18,32'b100000000000000000000000000);
+      test_task(4,32'b100000000000000);
+      test_task(10,32'b10000000000000000000000000);
+      test_task(12,32'b10);
+      test_task(11,32'b1000);
+      test_task(8,32'b1000000000000000000000000000);
+      test_task(15,32'b1000000000000000000000000000000);
+      test_task(1,32'b1000000000000000000000000000000);
+      test_task(21,32'b100000000000000000000);
+      test_task(18,32'b1000000000000000);
+      test_task(22,32'b1000000000000000000000);
+      test_task(20,32'b1000000000000000);
+      test_task(10,32'b1000000000000000000000000000000);
+      test_task(1,32'b1000000000000000000000000000);
+      test_task(4,32'b10000000000000000000000000000);
+      test_task(19,32'b100000);
+      test_task(15,32'b1000000);
+      test_task(15,32'b10000000000000000000000000000);
+      test_task(9,32'b10000000000000000000000000000000);
+      test_task(9,32'b10000000000000000000000);
+      test_task(22,32'b1000000000000000000000000000000);
+      test_task(0,32'b100000000000000000000000000000);
+      test_task(17,32'b100);
+      test_task(13,32'b1000000000000000000000000);
+      end
     // Finish the testbench
     
     @(negedge clk);
