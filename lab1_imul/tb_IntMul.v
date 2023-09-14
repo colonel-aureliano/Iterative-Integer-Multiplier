@@ -18,12 +18,12 @@
 // Testbench defines
 //------------------------------------------------------------------------
 
-localparam NUM_TESTS = 12;
+localparam NUM_TESTS = 15;
 
 localparam  INPUT_TEST_SIZE = 64;
 localparam OUTPUT_TEST_SIZE = 32;
 
-localparam MAX_SRC_DELAY = 32'b0;
+localparam MAX_SRC_DELAY = 32'b1;
 localparam MAX_SNK_DELAY = 32'b0;
 
 //------------------------------------------------------------------------
@@ -165,12 +165,36 @@ module top( input logic clk ,  input logic linetrace );
     test_case( { -32'd1, 32'd2_147_483_647 }, -32'd2_147_483_647 );
     test_case( { -32'd1, 32'd2_147_483_648 }, -32'd2_147_483_648 );
 
-    // test_case(1, -1);
-    // test_case(-1, 7);
-    // test_case(0, 2_147_483_647);
-    // test_case(1, 2_147_483_647);
-    // test_case(-1, 2_147_483_647);
-    // test_case(-1, 2_147_483_648);
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Small negative numbers × small positive numbers
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    $display("Small negative numbers x small positive numbers");
+    test_case( { -32'd3, 32'd2 },  -32'd6 );
+    test_case( { -32'd19, 32'd4 }, -32'd76 );
+    test_case( { -32'd9, 32'd9 },  -32'd81 );
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Small negative numbers × small negative numbers
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    $display("Small negative numbers x small negative numbers");
+    test_case( { -32'd3, -32'd4 }, 32'd12 );
+    test_case( {-32'd18, -32'd3}, 32'd54 );
+    test_case( {-32'd2, -32'd2},  32'd4 );
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Large positive numbers × large positive numbers
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    $display("Large positive numbers x large positive numbers");
+    test_case({32'd9999, 32'd9999}, 32'd99980001);
+    // test_task(46340, 46340);
+    // test_task(23872, 3526);
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Large positive numbers × large negative numbers
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    $display("Large positive numbers x large negative numbers");
+    // test_task(-9999, 77777);
+    // test_task(2938209, 273289);
 
   end
 
