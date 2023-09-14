@@ -24,7 +24,7 @@ localparam  INPUT_TEST_SIZE = 64;
 localparam OUTPUT_TEST_SIZE = 32;
 
 localparam MAX_SRC_DELAY = 32'b1;
-localparam MAX_SNK_DELAY = 32'b0;
+localparam MAX_SNK_DELAY = 32'b1;
 
 //------------------------------------------------------------------------
 // Top-level module
@@ -159,6 +159,8 @@ module top( input logic clk ,  input logic linetrace );
   // Don't forget to change NUM_TESTS above when adding new tests!
 
   initial begin
+    logic [31:0] rd1;
+    logic [31:0] rd2;
 
     if (`"`DESIGN`" == "IntMulAlt") begin
       // Alternative Design specific tests
@@ -237,6 +239,30 @@ module top( input logic clk ,  input logic linetrace );
     $display("Large positive numbers x large negative numbers");
     test_case( { -32'd9999, 32'd77777 },  -32'd777_692_223 );
     test_case( { 32'd29381, -32'd63289 }, -32'd1_859_494_109 );
+
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // Random numbers x randon numbers
+    //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    $display("Random numbers x random numbers");
+    rd1[31:0] = $random;
+    rd2[31:0] = $random;
+    test_case( { rd1, rd2 },  rd1 * rd2 );
+
+    rd1[31:0] = $random;
+    rd2[31:0] = $random;
+    test_case( { rd1, rd2 },  rd1 * rd2 );
+
+    rd1[31:0] = $random;
+    rd2[31:0] = $random;
+    test_case( { rd1, rd2 },  rd1 * rd2 );
+
+    rd1[31:0] = $random;
+    rd2[31:0] = $random;
+    test_case( { rd1, rd2 },  rd1 * rd2 );
+
+    rd1[31:0] = $random;
+    rd2[31:0] = $random;
+    test_case( { rd1, rd2 },  rd1 * rd2 );
 
   end
 
