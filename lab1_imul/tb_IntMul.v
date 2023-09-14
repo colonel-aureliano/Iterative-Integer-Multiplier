@@ -18,7 +18,7 @@
 // Testbench defines
 //------------------------------------------------------------------------
 
-localparam NUM_TESTS = 15;
+localparam NUM_TESTS = 23;
 
 localparam  INPUT_TEST_SIZE = 64;
 localparam OUTPUT_TEST_SIZE = 32;
@@ -178,23 +178,23 @@ module top( input logic clk ,  input logic linetrace );
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     $display("Small negative numbers x small negative numbers");
     test_case( { -32'd3, -32'd4 }, 32'd12 );
-    test_case( {-32'd18, -32'd3}, 32'd54 );
-    test_case( {-32'd2, -32'd2},  32'd4 );
+    test_case( { -32'd18, -32'd3 }, 32'd54 );
+    test_case( { -32'd2, -32'd2 },  32'd4 );
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Large positive numbers × large positive numbers
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     $display("Large positive numbers x large positive numbers");
-    test_case({32'd9999, 32'd9999}, 32'd99980001);
-    // test_task(46340, 46340);
-    // test_task(23872, 3526);
+    test_case( { 32'd9_999, 32'd9_999 }, 32'd99_980_001 );
+    test_case( { 32'd46_340, 32'd46_341 }, 32'd2_147_441_940 );
+    test_case( { 32'd23_872, 32'd35_269 }, 32'd841_941_568 );
 
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     // Large positive numbers × large negative numbers
     //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     $display("Large positive numbers x large negative numbers");
-    // test_task(-9999, 77777);
-    // test_task(2938209, 273289);
+    test_case( { -32'd9999, 32'd77777 },  -32'd777_692_223 );
+    test_case( { 32'd29381, -32'd63289 }, -32'd1_859_494_109 );
 
   end
 
@@ -203,8 +203,7 @@ module top( input logic clk ,  input logic linetrace );
   //----------------------------------------------------------------------
 
   initial begin
-
-    $display( "Starting tb_IntMulBase_full..." );
+    $display( "Starting testing" );
     reset = 1;
     
     // Wait a bit, then de-assert reset on negedge
