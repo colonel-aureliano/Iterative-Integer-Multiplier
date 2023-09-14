@@ -18,7 +18,7 @@
 // Testbench defines
 //------------------------------------------------------------------------
 
-localparam NUM_TESTS = 15;
+localparam NUM_TESTS = 100;
 
 localparam  INPUT_TEST_SIZE = 64;
 localparam OUTPUT_TEST_SIZE = 32;
@@ -123,16 +123,31 @@ module top( input logic clk ,  input logic linetrace );
   // Task for adding test cases
   //----------------------------------------------------------------------
 
+  integer idx = 0;
+
   task test_case(
     input logic [  INPUT_TEST_SIZE-1:0 ] src_msg,
     input logic [ OUTPUT_TEST_SIZE-1:0 ] snk_msg
   );
   begin
-    integer idx = 0;
 
     // Add messages to test arrays
     src_msgs[ idx ] = src_msg;
     snk_msgs[ idx ] = snk_msg;
+
+    idx = idx + 1;
+  end
+  endtask
+
+    task test_case_auto_calc_result(
+      input logic [INPUT_TEST_SIZE-1:(INPUT_TEST_SIZE)/2] a,
+      input logic [  (INPUT_TEST_SIZE)/2-1:0 ] b
+      );
+  begin
+
+    // Add messages to test arrays
+    src_msgs[ idx ] = {a,b};
+    snk_msgs[ idx ] = a * b;
 
     idx = idx + 1;
   end
@@ -144,6 +159,33 @@ module top( input logic clk ,  input logic linetrace );
   // Don't forget to change NUM_TESTS above when adding new tests!
 
   initial begin
+
+    if (`"`DESIGN`" == "IntMulAlt") begin
+      // Alternative Design specific tests
+      // Inputs designed to be of certain pattern
+      test_case_auto_calc_result(2938209, 32'b1000_0000_0001_0000_0001_0000_0000_0001);
+      test_case_auto_calc_result(-1, 32'b1000_0000_0000_0000_0100_0010_0000_0010);
+      test_case_auto_calc_result(8, 32'b0000_0000_0000_0000_0001_0000_0000_0000);
+      test_case_auto_calc_result(2,32'b0001_0000_0000_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(1,32'b0000_1000_0000_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(-10,32'b0000_0100_0000_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(-20,32'b0000_0010_0000_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(-5,32'b0000_0001_0000_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(1,32'b0000_0000_1000_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(2,32'b0000_0000_0100_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(3,32'b1000_0000_0010_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(1,32'b1000_0000_0001_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(2,32'b1000_0000_0000_1000_0000_0000_0000_0000);
+      test_case_auto_calc_result(-9,32'b1000_0000_0010_0100_0000_0000_0000_0000);
+      test_case_auto_calc_result(-3,32'b1000_0000_0010_0010_0000_0000_0000_0000);
+      test_case_auto_calc_result(1,32'b0010_0000_0000_0001_0000_0000_0000_0000);
+      test_case_auto_calc_result(2,32'b1000_0000_0010_0000_1000_0000_0000_0000);
+      test_case_auto_calc_result(2,32'b0010_0000_0000_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(2,32'b1100_0000_0010_0000_0000_0000_0000_0000);
+      test_case_auto_calc_result(4,32'b1100_0000_0001_0000_0000_0000_0100_0000);
+      test_case_auto_calc_result(4,32'b1100_0000_0001_0000_0100_0000_0000_0000);
+      test_case_auto_calc_result(1,32'b1100_0000_0000_0000_0000_0000_0000_0000);
+    end
 
     // Test cases
 
