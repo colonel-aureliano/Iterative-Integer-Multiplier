@@ -287,7 +287,7 @@ module lab1_imul_IntMulAlt
 
     vc_trace.append_str( trace_str, "(" );
     if (ostream_val) begin
-      $sformat( str, "%d", control_base.current_state );
+      $sformat( str, "%d", control_unit.state );
       vc_trace.append_str( trace_str, str );
 
       $sformat( str, "%d", ostream_msg );
@@ -297,10 +297,10 @@ module lab1_imul_IntMulAlt
        $sformat( str, "%d + ", ostream_msg );
       vc_trace.append_str( trace_str, str );
 
-      $sformat( str, "%d = ", data_base.a_to_shift );
+      $sformat( str, "%d = ", datapath.a_to_shift );
       vc_trace.append_str( trace_str, str );
 
-      $sformat( str, "%d", data_base.add_mux_out );
+      $sformat( str, "%d", datapath.add_mux_out );
       vc_trace.append_str( trace_str, str );
     end else vc_trace.append_str( trace_str, "                              ") ;
 
