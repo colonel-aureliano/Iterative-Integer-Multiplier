@@ -62,7 +62,7 @@ module vc_Trace
   initial begin
       storage = '0;
       storage[31:0] = 511; 
-    level = 1;
+    level = 3;
   end
 `endif // !`ifndef VERILATOR
 

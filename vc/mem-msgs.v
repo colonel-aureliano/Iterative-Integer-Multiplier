@@ -118,7 +118,7 @@ module vc_MemReqMsg4BTrace
 
   `VC_TRACE_BEGIN
   begin
-
+    //$display("Tracing");
     // Convert type into a string
 
     if ( msg.type_ === `VC_MEM_REQ_MSG_TYPE_X )
@@ -356,6 +356,7 @@ module vc_MemRespMsg4BTrace
     end
 
     // Put together the trace string
+    //$display("in here");
 
     if ( (vc_trace.level == 1) || (vc_trace.level == 2) ) begin
       $sformat( str, "%s", type_str );

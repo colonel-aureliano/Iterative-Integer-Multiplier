@@ -19,9 +19,16 @@
 #            and it tells the Makefile which testbench are associated
 #            with which modules.
 #
-#       tb_%.v utb_%.v ub_%.v: To execute a specific execute testbench.
+#       tb_%.v.sim utb_%.v.sim ub_%.v.sim: To execute a testbench.
 #            Use with enviroment variables DESIGN for testbench that
 #            can support mutiple modules.
+#
+#       %.hex.sim: To execute an assembly program with the processor
+#            design set by enviroment variables DESIGN.
+#
+#       %.hex.diff: To execute an assembly program with the processor
+#            design set by enviroment variables DESIGN and compare
+#            with the FL design.
 #
 #       coverage-report: To aggerate all the covreage reports and 
 #           generate and html report of the coverage.
@@ -50,13 +57,21 @@
 #       DESIGN: Used to set the design in case a testbench supports
 #           more then one design.  Not used for unit testbench. Is
 #           automatically set in run-all and can be manually set with
-#           tb_%.v
+#           tb_%.v.sim , %.hex.sim and %.hex.diff
 #
 #       COVERAGE: Used to set what kind of corverage report (full/line
 #           toggle)
 #
 #       OUTDIR: Used to set verilator output directory used in make 
-#           tb_%.v and is automatically set for run-all or run-design
+#           tb_%.v.sim and is automatically set for run-all or run-design
+#
+#       NOPT: Used to disable the optimizer
+#
+#       MEM:  Use to set the memory image for system level tb
+#
+#       MEMDUMP:  Use to set the memory dump for system level tb
+#
+#       VCD:  Set this to swith to VCD trace
 ######################################################################
 ######################################################################
 # !!!!You should not need to modify this file!!!!  If you believe
@@ -79,16 +94,24 @@ export VERILATOR_ROOT
 	VERILATOR = $(VERILATOR_ROOT)/bin/verilator
 	VERILATOR_COVERAGE = $(VERILATOR_ROOT)/bin/verilator_coverage
 endif
-VERSION= 1.6
+VERSION= 2.3 
 
 VERILATOR_FLAGS =
 VERILATOR_FLAGS += -cc --exe
-VERILATOR_FLAGS += -O0 -x-assign 0
+ifndef NOPT
+VERILATOR_FLAGS += -O3 
+else
+VERILATOR_FLAGS += -O0
+endif
+
+
+VERILATOR_FLAGS += -x-assign 0
 VERILATOR_FLAGS += -Wall
-VERILATOR_FLAGS += --trace-fst
 VERILATOR_FLAGS += --assert
 VERILATOR_FLAGS += --timing
 VERILATOR_FLAGS +=  -y ..
+VERILATOR_FLAGS +=  -y test
+VERILATOR_FLAGS +=  -y ../lab1_imul
 VERILATOR_FLAGS +=  -Wno-DECLFILENAME
 VERILATOR_FLAGS +=  -Wno-UNUSEDSIGNAL
 VERILATOR_FLAGS +=  -Wno-VARHIDDEN
@@ -96,17 +119,34 @@ VERILATOR_FLAGS +=  -Wno-UNDRIVEN
 VERILATOR_FLAGS +=  -Wno-GENUNNAMED
 VERILATOR_FLAGS +=  -Wno-UNUSEDPARAM
 VERILATOR_FLAGS +=  -Wno-PINCONNECTEMPTY
-VERILATOR_FLAGS +=  --assert
+ifndef VCD
+VERILATOR_FLAGS += --trace-fst
+else
+VERILATOR_FLAGS += --trace
+endif
 
 SOURCES := $(wildcard  obj_dir/*/tb_*) $(wildcard  obj_dir/*/ub_*)
 UTB_SOURCES := $(wildcard  obj_dir/utb_*)
 ifndef DESIGN
 	DESIGN  = Unit_Test
 endif
+ifndef MEM
+	MEM=hex/add.hex 
+endif
+ifndef MEMDUMP
+	MEMDUMP=memdump.hex
+endif
 ifndef RUN_ARG
-	RUN_ARG = 
+	RUN_ARG= 
+endif
+ifndef SYS_TB
+	SYS_TB=tb_Proc.v
+endif
+ifndef FL
+	FL=ProcFLMultiCycle
 endif
 
+COMMAND_ARG=$(RUN_ARG) +mem=$(MEM) +memdump=$(MEMDUMP)
 ifndef COVERAGE
 	COVERAGE = coverage
 endif
@@ -122,23 +162,38 @@ endif
 DESIGN_LIST  := $$(head -1 $(DESIGN_CONFIG) | cut -f1 -d"\#" )
 TOP_TB := $$(head -2 $(DESIGN_CONFIG) | tail -1 | cut -f1 -d"\#")
 TOP_UB := $$(head -3 $(DESIGN_CONFIG) | tail -1 | cut -f1 -d"\#")
-UTB := $(wildcard  ./utb_*)
+UTB := $(wildcard  utb_*)
+HEX_LIST := $(addsuffix .hex,$(notdir $(basename $(wildcard  asm/*.asm))))
+
 
 ######################################################################
 # Starting Makefile Rules
 ######################################################################
 
 .ONESHELL:
+
 .PRECIOUS: %.v %.sv
 
 default: run-all
 $(SOURCES) $(UTB_SOURCES): FORCE
-	$(MAKE) $(basename $(@F)).v DESIGN=$(notdir $(@D)) OUTDIR=$(@)
+	$(MAKE) $(basename $(@F)).v.sim DESIGN=$(notdir $(@D)) OUTDIR=$(@)
 
-run-all: check-setup
-	for designs in $(DESIGN_CONFIG_LIST) ; do \
-		$(MAKE) run-design DESIGN_CONFIG=$$designs --no-print-directory; \
-	done; 
+
+run-all: check-setup $(HEX_LIST)
+		@echo $(CURDIR)
+		@echo $(DESIGN_LIST)
+ifeq ($(notdir $(CURDIR) ), lab2_proc) 
+		for hex in $(HEX_LIST); do \
+			for designs in $(DESIGN_LIST) ; do \
+				mkdir -p obj_dir/$$designs ;\
+				$(MAKE) $$hex.diff DESIGN=$$designs OUTDIR=obj_dir/$$designs ; \
+			done; \
+		done;
+else 
+		for designs in $(DESIGN_CONFIG_LIST) ; do \
+			$(MAKE) run-design DESIGN_CONFIG=$$designs --no-print-directory; \
+		done; 
+endif
 	for utb in $(UTB) ; do \
 		mkdir -p obj_dir/$$(basename $$utb); \
 		$(MAKE) obj_dir/$$(basename $$utb) --no-print-directory; \
@@ -158,12 +213,14 @@ run-design: check-setup
 		$(MAKE) obj_dir/$$number/$$ub --no-print-directory; \
 		done; \
 	done; 
-	
-ub_%.v utb_%.v tb_%.v: FORCE  check-setup 
 
-	@echo
+%.hex:
+	@mkdir -p hex 
+	@python3 tinyrv2_encoding_assembler.py asm/$(basename $@ ).asm hex/$@  
+%.hex.sim: %.hex FORCE  check-setup
+	@echo $(basename $@)
 	@echo "-- VERILATE ----------------"
-	$(VERILATOR) $(VERILATOR_FLAGS)  --Mdir $(OUTDIR) --$(COVERAGE) --top-module top $@ verilator.cpp  +define+DESIGN=$(DESIGN)  
+	$(VERILATOR) $(VERILATOR_FLAGS)  --Mdir $(OUTDIR) --$(COVERAGE) --top-module top $(SYS_TB) verilator.cpp  +define+DESIGN=$(DESIGN)  
 	cp verilator.?pp $(OUTDIR) 
 
 	@echo
@@ -175,7 +232,96 @@ ub_%.v utb_%.v tb_%.v: FORCE  check-setup
 	@echo "-- RUN ---------------------"
 	@mkdir -p logs
 	@echo 
-	$(OUTDIR)/Vtop +trace --all --design $(DESIGN) $(RUN_ARG) --outname $(DESIGN).$(basename $(@F) .v) 
+	$(OUTDIR)/Vtop +trace --all --design $(DESIGN) $(RUN_ARG) +mem=hex/$(basename $@) +memdump=$(MEMDUMP) --outname $(DESIGN).$(SYS_TB).$(basename $@) 
+
+	@echo $(basename $@)
+	@echo "-- VERILATE ----------------"
+	$(VERILATOR) $(VERILATOR_FLAGS)  --Mdir $(OUTDIR) --$(COVERAGE) --top-module top $(SYS_TB) verilator.cpp  +define+DESIGN=$(DESIGN)  
+	cp verilator.?pp $(OUTDIR) 
+
+	@echo
+	@echo "-- COMPILE -----------------"
+
+	$(MAKE)  -C $(OUTDIR) -f Vtop.mk 
+
+	@echo
+	@echo "-- RUN ---------------------"
+	@mkdir -p logs
+	@echo 
+	$(OUTDIR)/Vtop +trace --all --design $(DESIGN) $(RUN_ARG) +mem=hex/$(basename $@) +memdump=$(MEMDUMP) --outname $(DESIGN).$(SYS_TB).$(basename $@) 
+	@echo
+	@echo "-- DONE --------------------"
+	printf "To see waveforms, open waves/%s.waves.fst in a waveform viewer" $(DESIGN).$(SYS_TB).$(basename $@)
+	@echo
+
+%.hex.diff: %.hex FORCE  check-setup
+	@echo $(basename $@)
+	@echo "-- VERILATE FL ----------------"
+	$(VERILATOR) $(VERILATOR_FLAGS)  --Mdir $(OUTDIR)_FL --$(COVERAGE) --top-module top $(SYS_TB) verilator.cpp  +define+DESIGN=$(FL)  
+	cp verilator.?pp $(OUTDIR)_FL 
+
+	@echo
+	@echo "-- COMPILE FL-----------------"
+
+	$(MAKE)  -C $(OUTDIR)_FL -f Vtop.mk 
+
+	@echo
+	@echo "-- RUN FL ---------------------"
+	@mkdir -p logs
+	@echo 
+	$(OUTDIR)_FL/Vtop +trace --all --design $(FL) $(RUN_ARG) +mem=hex/$(basename $@) +memdump=$(MEMDUMP).fl --outname $(FL).$(SYS_TB).$(basename $@) 
+
+	@echo $(basename $@)
+	@echo "-- VERILATE ----------------"
+	$(VERILATOR) $(VERILATOR_FLAGS)  --Mdir $(OUTDIR) --$(COVERAGE) --top-module top $(SYS_TB) verilator.cpp  +define+DESIGN=$(DESIGN)  
+	cp verilator.?pp $(OUTDIR) 
+
+	@echo
+	@echo "-- COMPILE -----------------"
+
+	$(MAKE)  -C $(OUTDIR) -f Vtop.mk 
+
+	@echo
+	@echo "-- RUN ---------------------"
+	@mkdir -p logs
+	@echo 
+	$(OUTDIR)/Vtop +trace --all --design $(DESIGN) $(RUN_ARG) +mem=hex/$(basename $@) +memdump=$(MEMDUMP) --outname $(DESIGN).$(SYS_TB).$(basename $@) 
+
+	@echo
+	@echo "-- Diff ---------------------"
+	@mkdir -p logs
+	@echo 
+	@diff -y $(MEMDUMP) $(MEMDUMP).fl ;
+	@if [ $$? -eq 0 ] ; then \
+	printf "+" >>results/$(DESIGN).$(SYS_TB).$(basename $@).txt ;\
+	echo "[ passed ] Memory Image is the same" ;\
+	else \
+	printf "-" >>results/$(DESIGN).$(SYS_TB).$(basename $@).txt ; \
+	echo "[ failed ] Memory Image is different" ;\
+	fi
+	@echo
+	@echo "-- DONE --------------------"
+	@printf "To see waveforms, open waves/%s.waves.fst in a waveform viewer" $(DESIGN).$(SYS_TB).$(basename $@)
+	@echo
+ub_%.v utb_%.v tb_%.v: FORCE  
+	@echo decapitated call.  Use make $@.sim instead 
+
+ub_%.v.sim utb_%.v.sim tb_%.v.sim: FORCE  check-setup 
+	@echo
+	@echo "-- VERILATE ----------------"
+	$(VERILATOR) $(VERILATOR_FLAGS)  --Mdir $(OUTDIR) --$(COVERAGE) --top-module top $(basename $@) verilator.cpp  +define+DESIGN=$(DESIGN)  
+	cp verilator.?pp $(OUTDIR) 
+
+	@echo
+	@echo "-- COMPILE -----------------"
+
+	$(MAKE)  -C $(OUTDIR) -f Vtop.mk 
+
+	@echo
+	@echo "-- RUN ---------------------"
+	@mkdir -p logs
+	@echo 
+	$(OUTDIR)/Vtop +trace --all --design $(DESIGN) $(COMMAND_ARG) --outname $(DESIGN).$(basename $(@F) .v) 
 
 	@echo
 	@echo "-- DONE --------------------"
@@ -199,14 +345,14 @@ show-results: FORCE check-setup
 	@echo
 	@echo "-- Results ----------------"
 	for res in $(wildcard results/*.txt) ; do  \
-		printf "[%30s]" $$(basename -- $$res) ;\
+		printf "[%70s]" $$(basename -- $$res) ;\
 		result=$$(GREP_COLORS="ms=32" grep --color=always -E '^|\+' $$res  );\
 		echo $$result | GREP_COLORS="ms=01;31" grep --color=always -E '^|\-' ;\
 	done;
 show-config:
 	$(VERILATOR) -V
 	$(MAKE) check-setup
-setup: real
+setup: real 
 	@echo Removing all symlink
 	@find . -maxdepth 10 -type l -delete
 	
@@ -235,48 +381,48 @@ endif
 	
 check-setup: FORCE
 	@if (! [ -L ./Makefile ]); then \
-		echo "Makefile detected not a symlink!" ;\
-		echo "You are either 1) attepting to check your setup in your labroot, which is ok, but you will need to cd to the appropriate subdirectory to work on the labs or tutorials, or " ;\
-		echo "2) have manually copy the make file to the a subdirectory which you should not have done. " ;\
-		echo "If you are unsure please ask a member of course staff for assistance" ;\
+	echo "Makefile detected not a symlink!" ;\
+	echo "You are either 1) attepting to check your setup in your labroot, which is ok, but you will need to cd to the appropriate subdirectory to work on the labs or tutorials, or " ;\
+	echo "2) have manually copy the make file to the a subdirectory which you should not have done. " ;\
+	echo "If you are unsure please ask a member of course staff for assistance" ;\
 	fi
 	@echo ""
-	@a=$$(echo v.$(VERSION) "("$$(sha1sum Makefile)")");\
+	@a=$$(echo v.$(VERSION) "("$$(sha1sum Makefile)")"); \
 	if [ "$$a" != "$$(head -n 1 .ece-4750-setup)" ]; then \
 		echo "The makefile script has been modified since setup!";\
 		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
-		echo "Your current version is " $$a
-		echo "Your setup version is  " $$(head -n 1 .ece-4750-setup)
+		echo "Your current version is " $$a ; \
+		echo "Your setup version is  " $$(head -n 1 .ece-4750-setup) ; \
 		exit 1 ;\
 	fi
-	@a=$$(echo "("$$(sha1sum verilator.cpp)")");\
+	@a=$$(echo "("$$(sha1sum verilator.cpp)")"); \
 	if [ "$$a" != "$$(tail -n 1 .ece-4750-setup)" ]; then \
 		echo "The verilator.cpp file has been modified since setup!";\
 		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
-		echo "Your current version is " $$a
-		echo "Your setup version is  " $$(tail -n 1 .ece-4750-setup)
+		echo "Your current version is " $$a ; \
+		echo "Your setup version is  " $$(tail -n 1 .ece-4750-setup) ; \
 		exit 1 ;\
 	fi
 check-setup-root-ignore:
 	@echo ""
-	@a=$$(echo v.$(VERSION) "("$$(sha1sum Makefile)")");\
+	@a=$$(echo v.$(VERSION) "("$$(sha1sum Makefile)")"); \
 	if [ "$$a" != "$$(head -n 1 .ece-4750-setup)" ]; then \
 		echo "The makefile script has been modified since setup!";\
 		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
-		echo "Your current version is " $$a
-		echo "Your setup version is  " $$(head -n 1 .ece-4750-setup)
+		echo "Your current version is " $$a ; \
+		echo "Your setup version is  " $$(head -n 1 .ece-4750-setup) ; \
 		exit 1 ;\
 	fi
-	@a=$$(echo "("$$(sha1sum verilator.cpp)")");\
+	@a=$$(echo "("$$(sha1sum verilator.cpp)")"); \
 	if [ "$$a" != "$$(tail -n 1 .ece-4750-setup)" ]; then \
 		echo "The verilator.cpp file has been modified since setup!";\
 		echo "Please revert your changes, or rerun setup if the changes are intended. ";\
 		echo "If you are unsure how to proceed please contact a member of course staff.";\
-		echo "Your current version is " $$a
-		echo "Your setup version is  " $$(tail -n 1 .ece-4750-setup)
+		echo "Your current version is " $$a ; \
+		echo "Your setup version is  " $$(tail -n 1 .ece-4750-setup) ; \
 		exit 1 ;\
 	fi
 remove-symlink: real
@@ -300,6 +446,7 @@ build-tar: real FORCE check-setup-root-ignore
 	@echo "######################################################################" 
 	
 	lab1_files="lab1_imul/*.v lab1_imul/*.config" 
+	lab2_files="lab1_imul/*.v lab1_imul/*.config lab2_proc/*.v lab2_proc/*.config lab2_proc/asm lab2_proc/ubmark" 
 	echo "Enter your group number: [1-99]"
 	read groupnum 
 	echo "Enter partner #1 netID:"
@@ -315,13 +462,15 @@ build-tar: real FORCE check-setup-root-ignore
 	echo $$netIDC >>group$$groupnum.txt 
 	if [ "$$input" -eq "1" ] ; then 
 		tar czf lab1.tar.gz $$lab1_files Makefile verilator.cpp group$$groupnum.txt 
+	elif [ "$$input" -eq "2" ] ; then 
+		tar czf lab2.tar.gz $$lab2_files Makefile verilator.cpp group$$groupnum.txt 
 	else 
 		echo "Unkown lab number. Contact a member of course staff if you need assistance." 
 	fi
 help:
-	@head -n 60 Makefile 
+	@head -n 79 Makefile 
 
 clean:
-	-rm -rf obj_dir logs *.log *.dmp *.vpd coverage.dat core results waves
+	-rm -rf obj_dir obj_dir_FL logs *.log *.dmp *.vpd coverage.dat core.* results waves *hex
 
 FORCE:

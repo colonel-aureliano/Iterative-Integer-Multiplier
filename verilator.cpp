@@ -2,6 +2,7 @@
 #include <verilated.h>
 
 #include "verilated_fst_c.h"
+#include "verilated_vcd_c.h"
 #include "Vtop.h"
 #include <iostream>
 #include <fstream>
@@ -30,7 +31,7 @@ void fail (){
     pass_failed+='-';
 }
 int main(int argc, char** argv, char** env) {
-
+    Verilated::commandArgs(argc, argv);
     bool timming = false;
     bool coverage = false;
     bool waves = false;
@@ -80,9 +81,12 @@ int main(int argc, char** argv, char** env) {
     Verilated::commandArgs(argc, argv);
     Verilated::mkdir("logs");
     const std::unique_ptr<VerilatedContext> contextp{new VerilatedContext};
+    Verilated::commandArgs(argc, argv);
     contextp->traceEverOn(true);
-    Vtop* top = new Vtop{contextp.get(), "TOP"};  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
+    Vtop* top = new Vtop{contextp.get(), "top"};  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
       //svSetScope (svGetScopeFromName("Vtop.v"));
+    
+    #if VM_TRACE_FST
     VerilatedFstC* tfp = new VerilatedFstC;
     Verilated::traceEverOn(true);
     if(waves){
@@ -90,6 +94,17 @@ int main(int argc, char** argv, char** env) {
         Verilated::mkdir("waves");
         tfp->open((std::string("waves/")+outname +"waves.fst").c_str());
     }
+    #else
+    VerilatedVcdC* tfp = new VerilatedVcdC;
+    Verilated::traceEverOn(true);
+    Verilated::commandArgs(argc, argv);
+    if(waves){
+        top->trace(tfp, 99);  // Trace 99 levels of hierarchy
+        Verilated::mkdir("waves");
+        tfp->open((std::string("waves/")+outname +"waves.vcd").c_str());
+    }
+    #endif
+    
     const int nchars = 512;
      const int nwords = nchars/4;
 
@@ -134,11 +149,13 @@ int main(int argc, char** argv, char** env) {
         tfp->close();
     }
     printf("Passed %ld of %ld test\n",passed,tests);
-    std::cout<<pass_failed<<"\n";
+     std::cout<<pass_failed<<"\n";
+    printf("Simultation finished at %ld time\n", main_time);
+   
     Verilated::mkdir("results");
     std::ofstream results;
     results.open ((std::string("results/")+outname+"txt"));
-    results<<pass_failed<<"\n";
+    results<<pass_failed;
     results.close();
     delete top;
     top = NULL;
