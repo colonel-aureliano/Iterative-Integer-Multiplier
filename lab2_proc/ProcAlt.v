@@ -9,6 +9,11 @@
 `include "vc/queues.v"
 `include "vc/trace.v"
 
+`include "tinyrv2_encoding.v"
+`include "ProcAltCtrl.v"
+`include "ProcAltDPath.v"
+`include "DropUnit.v"
+
 //''' LAB TASK '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 // Include components here
 //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -108,6 +113,22 @@ module lab2_proc_ProcAlt
   logic         imem_respstream_drop_rdy;
 
   // Add drop unit
+  lab2_proc_DropUnit #($bits(mem_resp_4B_t)) imem_respstream_drop_unit
+  (
+    .clk         (clk),
+    .reset       (reset),
+
+    .drop        (imem_respstream_drop),
+
+    .istream_msg (imem_respstream_msg),
+    .istream_val (imem_respstream_val),
+    .istream_rdy (imem_respstream_rdy),
+
+    .ostream_msg (imem_respstream_drop_msg),
+    .ostream_val (imem_respstream_drop_val),
+    .ostream_rdy (imem_respstream_drop_rdy)
+  );
+
 
   //----------------------------------------------------------------------
   // Data Memory Request Bypass Queue
@@ -170,6 +191,95 @@ module lab2_proc_ProcAlt
   //''' LAB TASK '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
   // Instantiate and connect components here
   //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+  
+  //----------------------------------------------------------------------
+  // Control/Status Signals
+  //----------------------------------------------------------------------
+
+  // control signals (ctrl->dpath)
+
+  logic        reg_en_F;
+  logic [1:0]  pc_sel_F;
+
+  logic        reg_en_D;
+  logic [1:0]  op2_sel_D;
+  logic [1:0]  csrr_sel_D;
+  logic [2:0]  imm_type_D;
+
+  logic        reg_en_X;
+  logic [3:0]  alu_fn_X;
+
+  logic        reg_en_M;
+  logic        wb_result_sel_M;
+
+  logic        reg_en_W;
+  logic [4:0]  rf_waddr_W;
+  logic        rf_wen_W;
+  logic        stats_en_wen_W;
+
+  // status signals (dpath->ctrl)
+
+  logic [31:0] inst_D;
+  logic        br_cond_eq_X;
+
+lab2_proc_ProcAltCtrl ctrl
+  (
+    // Instruction Memory Port
+
+    .imem_reqstream_val       (imem_reqstream_enq_val),
+    .imem_reqstream_rdy       (imem_reqstream_enq_rdy),
+    .imem_respstream_val      (imem_respstream_drop_val),
+    .imem_respstream_rdy      (imem_respstream_drop_rdy),
+
+    // Data Memory Port
+
+    .dmem_reqstream_val       (dmem_reqstream_enq_val),
+    .dmem_reqstream_rdy       (dmem_reqstream_enq_rdy),
+    .dmem_respstream_val      (dmem_respstream_val),
+    .dmem_respstream_rdy      (dmem_respstream_rdy),
+
+    // mngr communication ports
+
+    .mngr2proc_val            (mngr2proc_val),
+    .mngr2proc_rdy            (mngr2proc_rdy),
+    .proc2mngr_val            (proc2mngr_enq_val),
+    .proc2mngr_rdy            (proc2mngr_enq_rdy),
+
+    // clk/reset/control/status signals
+
+    .*
+  );
+
+  //----------------------------------------------------------------------
+  // Datapath
+  //----------------------------------------------------------------------
+
+  lab2_proc_ProcAltDpath
+  #(
+    .p_num_cores              (p_num_cores)
+  )
+  dpath
+  (
+    // Instruction Memory Port
+
+    .imem_reqstream_msg_addr  (imem_reqstream_enq_msg_addr),
+    .imem_respstream_msg      (imem_respstream_drop_msg),
+
+    // Data Memory Port
+
+    .dmem_reqstream_msg_addr  (dmem_reqstream_enq_msg_addr),
+    .dmem_respstream_msg_data (dmem_respstream_msg.data),
+
+    // mngr communication ports
+
+    .mngr2proc_data           (mngr2proc_msg),
+    .proc2mngr_data           (proc2mngr_enq_msg),
+
+    // clk/reset/control/status signals
+
+    .*
+  );
+
 
   //----------------------------------------------------------------------
   // Line tracing
@@ -177,7 +287,7 @@ module lab2_proc_ProcAlt
 
   `ifndef SYNTHESIS
 
-  //lab2_proc_tinyrv2_encoding_InstTasks tinyrv2();
+  lab2_proc_tinyrv2_encoding_InstTasks tinyrv2();
 
   logic [`VC_TRACE_NBITS-1:0] str;
   logic [`VC_TRACE_NBITS-1:0] temp;
@@ -185,72 +295,76 @@ module lab2_proc_ProcAlt
   `VC_TRACE_BEGIN
   begin
 
-    // $sformat(temp,"%x",mngr2proc_msg);
-    // vc_trace.append_val_rdy_str( trace_str, mngr2proc_val, mngr2proc_rdy, temp );
-    // vc_trace.append_str( trace_str, ">" );
+    $sformat(temp,"%x",mngr2proc_msg);
+    vc_trace.append_val_rdy_str( trace_str, mngr2proc_val, mngr2proc_rdy, temp );
+    vc_trace.append_str( trace_str, ">" );
 
-    // if ( !ctrl.val_F )
-    //   vc_trace.append_chars( trace_str, " ", 8 );
-    // else if ( ctrl.squash_F ) begin
-    //   vc_trace.append_str( trace_str, "~" );
-    //   vc_trace.append_chars( trace_str, " ", 8-1 );
-    // end else if ( ctrl.stall_F ) begin
-    //   vc_trace.append_str( trace_str, "#" );
-    //   vc_trace.append_chars( trace_str, " ", 8-1 );
-    // end else begin
-    //   $sformat( str, "%x", dpath.pc_F );
-    //   vc_trace.append_str( trace_str, str );
-    // end
+    if ( !ctrl.val_F )
+      vc_trace.append_chars( trace_str, " ", 8 );
+    else if ( ctrl.squash_F ) begin
+      vc_trace.append_str( trace_str, "~" );
+      vc_trace.append_chars( trace_str, " ", 8-1 );
+    end else if ( ctrl.stall_F ) begin
+      vc_trace.append_str( trace_str, "#" );
+      vc_trace.append_chars( trace_str, " ", 8-1 );
+    end else begin
+      $sformat( str, "%x", dpath.pc_F );
+      vc_trace.append_str( trace_str, str );
+    end
 
-    // vc_trace.append_str( trace_str, "|" );
+    vc_trace.append_str( trace_str, "|" );
 
-    // if ( !ctrl.val_D )
-    //   vc_trace.append_chars( trace_str, " ", 23 );
-    // else if ( ctrl.squash_D ) begin
-    //   vc_trace.append_str( trace_str, "~" );
-    //   vc_trace.append_chars( trace_str, " ", 23-1 );
-    // end else if ( ctrl.stall_D ) begin
-    //   vc_trace.append_str( trace_str, "#" );
-    //   vc_trace.append_chars( trace_str, " ", 23-1 );
-    // end else
-    //   vc_trace.append_str( trace_str, { 3896'b0, tinyrv2.disasm( ctrl.inst_D ) } );
+    if ( !ctrl.val_D )
+      vc_trace.append_chars( trace_str, " ", 23 );
+    else if ( ctrl.squash_D ) begin
+      vc_trace.append_str( trace_str, "~" );
+      vc_trace.append_chars( trace_str, " ", 23-1 );
+    end else if ( ctrl.stall_D ) begin
+      vc_trace.append_str( trace_str, "#" );
+      vc_trace.append_chars( trace_str, " ", 23-1 );
+    end else
+      vc_trace.append_str( trace_str, { 3896'b0, tinyrv2.disasm( ctrl.inst_D ) } );
 
-    // vc_trace.append_str( trace_str, "|" );
+    vc_trace.append_str( trace_str, "|" );
 
-    // if ( !ctrl.val_X )
-    //   vc_trace.append_chars( trace_str, " ", 4 );
-    // else if ( ctrl.stall_X ) begin
-    //   vc_trace.append_str( trace_str, "#" );
-    //   vc_trace.append_chars( trace_str, " ", 4-1 );
-    // end else
-    //   vc_trace.append_str( trace_str, { 4064'b0, tinyrv2.disasm_tiny( ctrl.inst_X ) } );
+    if ( !ctrl.val_X )
+      vc_trace.append_chars( trace_str, " ", 4 );
+    else if ( ctrl.stall_X ) begin
+      vc_trace.append_str( trace_str, "#" );
+      vc_trace.append_chars( trace_str, " ", 4-1 );
+    end else
+      vc_trace.append_str( trace_str, { 4064'b0, tinyrv2.disasm_tiny( ctrl.inst_X ) } );
 
-    // vc_trace.append_str( trace_str, "|" );
+    vc_trace.append_str( trace_str, "|" );
 
-    // if ( !ctrl.val_M )
-    //   vc_trace.append_chars( trace_str, " ", 4 );
-    // else if ( ctrl.stall_M ) begin
-    //   vc_trace.append_str( trace_str, "#" );
-    //   vc_trace.append_chars( trace_str, " ", 4-1 );
-    // end else
-    //   vc_trace.append_str( trace_str, { 4064'b0, tinyrv2.disasm_tiny( ctrl.inst_M ) } );
+    if ( !ctrl.val_M )
+      vc_trace.append_chars( trace_str, " ", 4 );
+    else if ( ctrl.stall_M ) begin
+      vc_trace.append_str( trace_str, "#" );
+      vc_trace.append_chars( trace_str, " ", 4-1 );
+    end else
+      vc_trace.append_str( trace_str, { 4064'b0, tinyrv2.disasm_tiny( ctrl.inst_M ) } );
 
-    // vc_trace.append_str( trace_str, "|" );
+    vc_trace.append_str( trace_str, "|" );
 
-    // if ( !ctrl.val_W )
-    //   vc_trace.append_chars( trace_str, " ", 4 );
-    // else if ( ctrl.stall_W ) begin
-    //   vc_trace.append_str( trace_str, "#" );
-    //   vc_trace.append_chars( trace_str, " ", 4-1 );
-    // end else
-    //   vc_trace.append_str( trace_str, { 4064'b0, tinyrv2.disasm_tiny( ctrl.inst_W ) } );
+    if ( !ctrl.val_W )
+      vc_trace.append_chars( trace_str, " ", 4 );
+    else if ( ctrl.stall_W ) begin
+      vc_trace.append_str( trace_str, "#" );
+      vc_trace.append_chars( trace_str, " ", 4-1 );
+    end else
+      vc_trace.append_str( trace_str, { 4064'b0, tinyrv2.disasm_tiny( ctrl.inst_W ) } );
     
-    // vc_trace.append_str( trace_str, ">" );
-    // $sformat(temp,"%x",proc2mngr_enq_msg);
-    // vc_trace.append_val_rdy_str( trace_str, proc2mngr_enq_val, proc2mngr_enq_rdy, temp);
+    vc_trace.append_str( trace_str, ">" );
+    $sformat(temp,"%x",proc2mngr_enq_msg);
+    vc_trace.append_val_rdy_str( trace_str, proc2mngr_enq_val, proc2mngr_enq_rdy, temp);
 
   end
   `VC_TRACE_END
+
+  // These trace modules are useful because they breakout all the
+  // individual fields so you can see them in gtkwave
+
 
   vc_MemReqMsg4BTrace imem_reqstream_trace
   (
