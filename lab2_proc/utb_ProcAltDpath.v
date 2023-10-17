@@ -514,7 +514,7 @@ module top(  input logic clk, input logic linetrace );
     end else begin
       $display("pc_F is incorrect.  Expected: %h, Actual: %h", 'h200,DUT.pc_F); fail(); $finish();
     end 
-    
+
     //Advancing time
     $display( "Advancing time");
     @(negedge clk); 
@@ -540,6 +540,9 @@ module top(  input logic clk, input logic linetrace );
       $display("imm_D is incorrect.  Expected: %b, Actual: %b", 'b11111111111111111111101010101001,DUT.imm_D); fail(); $finish();
     end 
 
+    op2_sel_D  = 2'b01; // choose sext(imm)
+    imm_type_D = '0; // I-type imm-type
+
     //Advancing time
     $display( "Advancing time");
     @(negedge clk); 
@@ -559,9 +562,7 @@ module top(  input logic clk, input logic linetrace );
     end else begin
       $display("pc_X is incorrect.  Expected: %h, Actual: %h", 'h200,DUT.pc_X); fail(); $finish();
     end 
-    
-    op2_sel_D  = 2'b01; // choose sext(imm)
-    imm_type_D = '0; // I-type imm-type
+
     alu_fn_X   = 4'd3;   // ALU ORI
 
     //Advancing time
@@ -571,7 +572,7 @@ module top(  input logic clk, input logic linetrace );
     assert(DUT.pc_F == 'h20c) begin
       $display("pc_F is correct.  Expected: %h, Actual: %h", 'h20c,DUT.pc_F); pass();
     end else begin
-      $display("pc_F is incorrect.  Expected: %h, Actual: %h", 'hfffdb7ee,DUT.pc_F); fail(); $finish();
+      $display("pc_F is incorrect.  Expected: %h, Actual: %h", 'h20c,DUT.pc_F); fail(); $finish();
     end 
     assert(DUT.pc_D == 'h208) begin
       $display("pc_D is correct.  Expected: %h, Actual: %h", 'h208,DUT.pc_D);  pass();
@@ -582,7 +583,7 @@ module top(  input logic clk, input logic linetrace );
       $display("pc_X is correct.  Expected: %h, Actual: %h", 'h204,DUT.pc_X);  pass();
     end else begin
       $display("pc_X is incorrect.  Expected: %h, Actual: %h", 'h204,DUT.pc_X); fail(); $finish();
-    end 
+    end
     assert(DUT.ex_result_X == 'b11111111111111111111101010101001) begin
       $display("ex_result_X is correct.  Expected: %b, Actual: %b", 'b11111111111111111111101010101001,DUT.ex_result_M); pass();
     end else begin
@@ -592,12 +593,65 @@ module top(  input logic clk, input logic linetrace );
     //Advancing time
     $display( "Advancing time");
     @(negedge clk);
-    // assert(DUT.rf_wdata_W == 'b11111111111111111111101010101001) begin
-    //   $display("rf_wdata_W is correct.  Expected: %b, Actual: %b", 'b11111111111111111111101010101001,DUT.rf_wdata_W); pass();
-    // end else begin
-    //   $display("rf_wdata_W is incorrect.  Expected: %h, Actual: %h", 'b11111111111111111111101010101001,DUT.rf_wdata_W); fail(); $finish();
-    // end 
+    assert(DUT.rf_wdata_W == 'b11111111111111111111101010101001) begin
+      $display("rf_wdata_W is correct.  Expected: %b, Actual: %b", 'b11111111111111111111101010101001,DUT.rf_wdata_W); pass();
+    end else begin
+      $display("rf_wdata_W is incorrect.  Expected: %h, Actual: %h", 'b11111111111111111111101010101001,DUT.rf_wdata_W); fail(); $finish();
+    end 
+
+
+    //--------------------------------------------------------------------
+    // Unit Testing #5 XORI
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
   
+
+    //--------------------------------------------------------------------
+    // Unit Testing #6 SLTI
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
+
+
+    //--------------------------------------------------------------------
+    // Unit Testing #7 SLTIU
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
+
+
+    //--------------------------------------------------------------------
+    // Unit Testing #8 SRAI
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
+
+
+    //--------------------------------------------------------------------
+    // Unit Testing #9 SRLI
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
+
+
+    //--------------------------------------------------------------------
+    // Unit Testing #10 SLLI
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
+
+    //--------------------------------------------------------------------
+    // Unit Testing #11 LUI
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
+
+    //--------------------------------------------------------------------
+    // Unit Testing #12 AUIPC
+    //--------------------------------------------------------------------
+    // TODO: unit test it!
+    //====================================
     $finish();
 
   end
