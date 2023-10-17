@@ -1113,8 +1113,6 @@ module top(  input logic clk, input logic linetrace );
     //--------------------------------------------------------------------
     // Unit Testing #10 SLLI
     //--------------------------------------------------------------------
-    // TODO: unit test it!
-    //====================================
     $display("SLLI instruction testing");
     // Initalize all the signal inital values.
     imem_respstream_msg.type_ = `VC_MEM_RESP_MSG_TYPE_READ;
@@ -1238,14 +1236,177 @@ module top(  input logic clk, input logic linetrace );
     //--------------------------------------------------------------------
     // Unit Testing #11 LUI
     //--------------------------------------------------------------------
-    // TODO: unit test it!
-    //====================================
+    $display("LUI instruction testing");
+    // Initalize all the signal inital values.
+    imem_respstream_msg.type_ = `VC_MEM_RESP_MSG_TYPE_READ;
+    imem_respstream_msg.opaque = 8'b0;
+    imem_respstream_msg.test = 2'b0;
+    imem_respstream_msg.len    = 2'd0;
+    imem_respstream_msg.data   = 32'b00000000000000010110_00100_0110111;
+    dmem_respstream_msg_data = '0;
+    mngr2proc_data= '0;
+    imem_respstream_drop = '0;
+    reg_en_F = 1;
+    pc_sel_F = '0;
+    reg_en_D = 1;
+    op1_sel_D = 0;
+    op2_sel_D = '0;
+    csrr_sel_D = '0;
+    imm_type_D = 3'd3;  // U-type imm-type
+    imul_istream_val_D = '0;
+    reg_en_X =1;
+    alu_fn_X =0;
+    ex_result_sel_X =0;
+    imul_ostream_rdy_X =0;
+    reg_en_M =1;
+    wb_result_sel_M =0;
+    reg_en_W =1;
+    rf_waddr_W ='0;
+    rf_wen_W = '0;
+    stats_en_wen_W =0;
+    core_id = '0;
+    reset = 1;
+
+    #10
+
+    // Align test bench with negedge so that it looks better
+    @(negedge clk); 
+    reset = 0;
+    @(negedge clk); 
+    $display( "Advancing time");
+    // Not checking F stage
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk); 
+    // Checking D stage X stage is invalid
+    assert(DUT.inst_rd_D == 5'b00100) begin
+      $display("inst_rd_D is correct.  Expected: %b, Actual: %b", 5'b00100,DUT.inst_rd_D);pass();
+    end else begin
+      $display("inst_rd_D is incorrect.  Expected: %b, Actual: %b", 'b00100,DUT.inst_rd_D); fail(); $finish();
+    end 
+    assert(DUT.imm_D == 'b00010110000000000000) begin
+      $display("imm_D is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.imm_D);pass();
+    end else begin
+      $display("imm_D is incorrect.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.imm_D); fail(); $finish();
+    end 
+
+    op2_sel_D  = 2'b01; // choose sext(imm)
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk); 
+
+    alu_fn_X   = 4'd12;   // ALU CP
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk); 
+     // Checking F/D/X stage 
+    assert(DUT.ex_result_X == 'b00010110000000000000) begin
+      $display("ex_result_X is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.ex_result_X); pass();
+    end else begin
+      $display("ex_result_X is incorrect.  Expected: %h, Actual: %h", 'b00010110000000000000,DUT.ex_result_X); fail(); $finish();
+    end 
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk);
+    assert(DUT.rf_wdata_W == 'b00010110000000000000) begin
+      $display("rf_wdata_W is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.rf_wdata_W); pass();
+    end else begin
+      $display("rf_wdata_W is incorrect.  Expected: %h, Actual: %h", 'b00010110000000000000,DUT.rf_wdata_W); fail(); $finish();
+    end 
 
     //--------------------------------------------------------------------
     // Unit Testing #12 AUIPC
     //--------------------------------------------------------------------
     // TODO: unit test it!
     //====================================
+    $display("AUIPC instruction testing");
+    // Initalize all the signal inital values.
+    imem_respstream_msg.type_ = `VC_MEM_RESP_MSG_TYPE_READ;
+    imem_respstream_msg.opaque = 8'b0;
+    imem_respstream_msg.test = 2'b0;
+    imem_respstream_msg.len    = 2'd0;
+    imem_respstream_msg.data   = 32'b00000000000000010110_00100_0010111;
+    dmem_respstream_msg_data = '0;
+    mngr2proc_data= '0;
+    imem_respstream_drop = '0;
+    reg_en_F = 1;
+    pc_sel_F = '0;
+    reg_en_D = 1;
+    op1_sel_D = 0;
+    op2_sel_D = '0;
+    csrr_sel_D = '0;
+    imm_type_D = 3'd3;  // U-type imm-type
+    imul_istream_val_D = '0;
+    reg_en_X =1;
+    alu_fn_X =0;
+    ex_result_sel_X =0;
+    imul_ostream_rdy_X =0;
+    reg_en_M =1;
+    wb_result_sel_M =0;
+    reg_en_W =1;
+    rf_waddr_W ='0;
+    rf_wen_W = '0;
+    stats_en_wen_W =0;
+    core_id = '0;
+    reset = 1;
+
+    #10
+
+    // Align test bench with negedge so that it looks better
+    @(negedge clk); 
+    reset = 0;
+    @(negedge clk); 
+    $display( "Advancing time");
+    // Not checking F stage
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk); 
+    // Checking D stage X stage is invalid
+    assert(DUT.inst_rd_D == 5'b00100) begin
+      $display("inst_rd_D is correct.  Expected: %b, Actual: %b", 5'b00100,DUT.inst_rd_D);pass();
+    end else begin
+      $display("inst_rd_D is incorrect.  Expected: %b, Actual: %b", 'b00100,DUT.inst_rd_D); fail(); $finish();
+    end 
+    assert(DUT.imm_D == 'b00010110000000000000) begin
+      $display("imm_D is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.imm_D);pass();
+    end else begin
+      $display("imm_D is incorrect.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.imm_D); fail(); $finish();
+    end 
+
+    op2_sel_D  = 2'b01; // choose sext(imm)
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk); 
+
+    alu_fn_X   = 4'd0;   // ALU ADD
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk); 
+     // Checking F/D/X stage 
+    assert(DUT.ex_result_X == 'b00010110000000000000) begin
+      $display("ex_result_X is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.ex_result_X); pass();
+    end else begin
+      $display("ex_result_X is incorrect.  Expected: %h, Actual: %h", 'b00010110000000000000,DUT.ex_result_X); fail(); $finish();
+    end 
+
+    //Advancing time
+    $display( "Advancing time");
+    @(negedge clk);
+    assert(DUT.rf_wdata_W == 'b00010110000000000000) begin
+      $display("rf_wdata_W is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.rf_wdata_W); pass();
+    end else begin
+      $display("rf_wdata_W is incorrect.  Expected: %h, Actual: %h", 'b00010110000000000000,DUT.rf_wdata_W); fail(); $finish();
+    end 
+
+
+
     $finish();
 
   end
