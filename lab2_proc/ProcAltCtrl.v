@@ -159,13 +159,14 @@ module lab2_proc_ProcAltCtrl
   logic       pc_redirect_D;
   logic       pc_redirect_X;
   logic [1:0] pc_sel_D;
-  logic [1:0] pc_sel_X;
+  logic [1:0] pc_sel_X; // TODO: I would imagine we need to increase the size in the future
 
   // PC select logic
 
   localparam pc_plus4 = 2'b00;
   localparam pc_br    = 2'b01;
   localparam pc_jal   = 2'b10;
+  localparam pc_jalr  = 2'b11;
 
   always_comb begin
     if ( pc_redirect_X )   // If a branch is taken in X stage (bne)
@@ -258,6 +259,7 @@ module lab2_proc_ProcAltCtrl
   localparam br_x     = 3'bx; // Don't care
   localparam br_na    = 3'b0; // No branch
   localparam br_bne   = 3'b1; // bne
+  localparam br_jalr  = 3'b10; // jalr
 
   // Operand 1 Mux Select
 
@@ -408,6 +410,7 @@ module lab2_proc_ProcAltCtrl
       // Jump Instructions
       // =====================================================================================
       `TINYRV2_INST_JAL     :cs( y, br_na,  imm_j, n, am_rf, bm_x,   n, alu_x,   nr, wm_a, y,  n,   n    );
+      `TINYRV2_INST_JALR    :cs( y, br_jalr,imm_i, y, am_rf, bm_imm, n, alu_jalr,nr, wm_a, y,  n,   n    );
 
       // =====================================================================================
       // Branch Instructions
@@ -452,7 +455,6 @@ module lab2_proc_ProcAltCtrl
 
 
   // jal logic, redirect PC in D if jal
-
   always_comb begin
     if ( val_D && ( imm_type_D == imm_j ) ) begin
       $display("imm type j");
@@ -577,7 +579,11 @@ module lab2_proc_ProcAltCtrl
       pc_redirect_X = !br_cond_eq_X;
       pc_sel_X      = pc_br; // use branch target
     end
-    else begin
+    else if ( val_X && ( br_type_X == br_jalr ) ) begin
+      pc_redirect_X = 1'b1;
+      pc_sel_X      = pc_jalr; // use jalr target
+    end
+    else begin 
       pc_redirect_X = 1'b0;
       pc_sel_X      = pc_plus4; // use pc+4
     end

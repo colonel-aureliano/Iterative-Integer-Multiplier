@@ -92,6 +92,7 @@ module lab2_proc_ProcAltDpath
   logic [31:0] pc_plus4_F;
   logic [31:0] br_target_X;
   logic [31:0] jal_target_D;
+  logic [31:0] jalr_target_X;
 
   vc_EnResetReg#(32, c_reset_vector - 32'd4) pc_reg_F
   (
@@ -108,11 +109,12 @@ module lab2_proc_ProcAltDpath
     .out  (pc_plus4_F)
   );
 
-  vc_Mux3#(32) pc_sel_mux_F
+  vc_Mux4#(32) pc_sel_mux_F
   (
     .in0  (pc_plus4_F),
     .in1  (br_target_X),
     .in2  (jal_target_D),
+    .in3  (jalr_target_X),
     .sel  (pc_sel_F),
     .out  (pc_next_F)
   );
@@ -304,7 +306,9 @@ module lab2_proc_ProcAltDpath
   //   .out      (ex_result_X)
   // );
 
-  assign ex_result_X = alu_result_X;
+  assign ex_result_X = alu_result_X; // TODO: need to change it once we have multiplier
+
+  assign jalr_target_X = alu_result_X;
 
   assign dmem_reqstream_msg_addr = alu_result_X;
 
