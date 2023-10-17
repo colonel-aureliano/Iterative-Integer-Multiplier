@@ -155,16 +155,28 @@ module lab2_proc_ProcAltCtrl
 
   // forward declaration for PC sel
 
+  logic       pc_redirect_D;
   logic       pc_redirect_X;
+  logic [1:0] pc_sel_D;
   logic [1:0] pc_sel_X;
 
   // PC select logic
 
+  localparam pc_plus4 = 2'b00;
+  localparam pc_br    = 2'b01;
+  localparam pc_jal   = 2'b10;
+
   always_comb begin
-    if ( pc_redirect_X )   // If a branch is taken in X stage
+    if ( pc_redirect_X )   // If a branch is taken in X stage (bne)
       pc_sel_F = pc_sel_X; // Use pc from X
+    else if ( pc_redirect_D ) begin
+      $display("redirect D");
+      pc_sel_F = pc_sel_D;
+    end
     else
-      pc_sel_F = 2'b0;     // Use pc+4
+      $display("plus 4"); begin
+      pc_sel_F = pc_plus4;     // Use pc+4
+    end
   end
 
   // ostall due to the imem response not valid.
@@ -343,13 +355,15 @@ module lab2_proc_ProcAltCtrl
       `TINYRV2_INST_CSRR    :cs( y, br_na,  imm_i, n, bm_csr, n, alu_cp1, nr, wm_a, y,  y,   n    );
       `TINYRV2_INST_CSRW    :cs( y, br_na,  imm_i, y, bm_rf,  n, alu_cp0, nr, wm_a, n,  n,   y    );
 
-      `TINYRV2_INST_ADDI    :cs( y, br_na,  imm_i, y, bm_imm, n, alu_add, nr, wm_a, y,  n,   n    );
-
       //''' LAB TASK '''''''''''''''''''''''''''''''''''''''''''''''''''''
       // Add more instructions to the control signal table
       //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-      default              :cs( n, br_x,  imm_x, n, bm_x,    n, alu_x,   nr, wm_x, n,  n,   n    );
+      `TINYRV2_INST_ADDI    :cs( y, br_na,  imm_i, y, bm_imm, n, alu_add, nr, wm_a, y,  n,   n    );
+
+      `TINYRV2_INST_JAL     :cs( y, br_na,  imm_j, n, bm_x,   n, alu_x,   nr, wm_a, y,  n,   n    );
+
+      default               :cs( n, br_x,  imm_x, n, bm_x,    n, alu_x,   nr, wm_x, n,  n,   n    );
 
     endcase
   end // always_comb
@@ -383,6 +397,24 @@ module lab2_proc_ProcAltCtrl
 
   logic  ostall_mngr2proc_D;
   assign ostall_mngr2proc_D = val_D && mngr2proc_rdy_D && !mngr2proc_val;
+
+
+
+  // jal logic, redirect PC in D if jal
+
+  always_comb begin
+    if ( val_D && ( imm_type_D == imm_j ) ) begin
+      $display("imm type j");
+      pc_redirect_D = 1'b1;
+      pc_sel_D      = pc_jal; // use jal target
+    end
+    else begin
+      $display("imm type not j");
+      pc_redirect_D = 1'b0;
+      pc_sel_D      = pc_plus4; // use pc+4
+    end
+  end
+
 
   // ostall if write address in X matches rs1 in D
 
@@ -492,11 +524,11 @@ module lab2_proc_ProcAltCtrl
   always_comb begin
     if ( val_X && ( br_type_X == br_bne ) ) begin
       pc_redirect_X = !br_cond_eq_X;
-      pc_sel_X      = 2'b1; // use branch target
+      pc_sel_X      = pc_br; // use branch target
     end
     else begin
       pc_redirect_X = 1'b0;
-      pc_sel_X      = 2'b0; // use pc+4
+      pc_sel_X      = pc_plus4; // use pc+4
     end
   end
 

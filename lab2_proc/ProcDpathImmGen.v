@@ -25,6 +25,8 @@ module lab2_proc_ProcDpathImmGen
       // Add more immediate types
       //''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
+      3'd4: // J-type
+        imm = { {12{inst[31]}}, inst[19:12], inst[20], inst[30:25], inst[24:21], 1'b0 };
       default:
         imm = 32'bx;
 

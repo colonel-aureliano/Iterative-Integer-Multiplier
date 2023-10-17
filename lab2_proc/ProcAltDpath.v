@@ -83,8 +83,11 @@ module lab2_proc_ProcAltDpath
   // F stage
   //--------------------------------------------------------------------
 
+  // Output from `pc_reg_F` to `pc_reg_D`
   logic [31:0] pc_F;
+  // Output from `pc_sel_mux_F` to `pc_reg_F`
   logic [31:0] pc_next_F;
+  // Output from `pc_incr_F` to `pc_sel_mux_F`
   logic [31:0] pc_plus4_F;
   logic [31:0] br_target_X;
   logic [31:0] jal_target_D;
@@ -117,11 +120,11 @@ module lab2_proc_ProcAltDpath
   // D stage
   //--------------------------------------------------------------------
 
-  logic [31:0] pc_D;
+  logic [31:0] pc_D; // Output from `pc_reg_D` to `pc_plus_imm_D`, `pc_reg_X', and `op1_sel_mux_D`
   logic [ 4:0] inst_rd_D;
   logic [ 4:0] inst_rs1_D;
   logic [ 4:0] inst_rs2_D;
-  logic [31:0] imm_D;
+  logic [31:0] imm_D; // Output from `imm_gen_D` to `pc_plus_imm_D`
 
   vc_EnResetReg#(32) pc_reg_D
   (
@@ -219,8 +222,25 @@ module lab2_proc_ProcAltDpath
   // X stage
   //--------------------------------------------------------------------
 
+  logic [31:0] pc_X;
+  logic [31:0] pc_plus4_X;
   logic [31:0] op1_X;
   logic [31:0] op2_X;
+
+  vc_EnResetReg#(32) pc_reg_X
+  (
+    .clk    (clk),
+    .reset  (reset),
+    .en     (reg_en_X),
+    .d      (pc_D),
+    .q      (pc_X)
+  );
+
+  vc_Incrementer#(32, 4) pc_incr_X
+  (
+    .in   (pc_X),
+    .out  (pc_plus4_X)
+  );
 
   vc_EnResetReg#(32, 0) op1_reg_X
   (
