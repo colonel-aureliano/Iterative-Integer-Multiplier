@@ -46,6 +46,7 @@ module lab2_proc_ProcAltDpath
   input  logic [1:0]   pc_sel_F,
 
   input  logic         reg_en_D,
+  input  logic         op1_sel_D,
   input  logic [1:0]   op2_sel_D,
   input  logic [1:0]   csrr_sel_D,
   input  logic [2:0]   imm_type_D,
@@ -180,6 +181,7 @@ module lab2_proc_ProcAltDpath
     .wr_data  (rf_wdata_W)
   );
 
+  logic [31:0] op1_D;
   logic [31:0] op2_D;
 
   logic [31:0] csrr_data_D;
@@ -195,6 +197,16 @@ module lab2_proc_ProcAltDpath
    .in2  (core_id),
    .sel  (csrr_sel_D),
    .out  (csrr_data_D)
+  );
+
+  // op1 select mux
+  // This mux chooses among RS1 and PC
+  vc_Mux2#(32) op1_sel_mux_D
+  (
+    .in0  (pc_D),
+    .in1  (rf_rdata0_D),
+    .sel  (op1_sel_D),
+    .out  (op1_D)
   );
 
   // op2 select mux
@@ -247,7 +259,7 @@ module lab2_proc_ProcAltDpath
     .clk   (clk),
     .reset (reset),
     .en    (reg_en_X),
-    .d     (rf_rdata0_D),
+    .d     (op1_D),
     .q     (op1_X)
   );
 
@@ -282,6 +294,15 @@ module lab2_proc_ProcAltDpath
     .ops_lt   (),
     .ops_ltu  ()
   );
+
+  // vc_Mux3#(32) ex_result_sel_mux_X
+  // (
+  //   .in0      (pc_plus4_X),
+  //   .in1      (alu_result_X),
+  //   .in2      (imul_resp_msg),
+  //   .sel      (ex_result_sel_X),
+  //   .out      (ex_result_X)
+  // );
 
   assign ex_result_X = alu_result_X;
 

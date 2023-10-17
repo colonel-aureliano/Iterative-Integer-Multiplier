@@ -212,7 +212,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -293,7 +293,7 @@ module top(  input logic clk, input logic linetrace );
     imm_type_D = '0; // I-type imm-type
     
     //Advancing time
-    $display( "Advancing time with J imm jump on D stage");
+    $display( "Advancing time ");
     @(negedge clk); 
      // Checking F/D/X stage 
     assert(DUT.pc_F == 'h20c) begin
@@ -348,7 +348,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -450,9 +450,9 @@ module top(  input logic clk, input logic linetrace );
       $display("pc_X is incorrect.  Expected: %h, Actual: %h", 'h204,DUT.pc_X); fail(); $finish();
     end 
     assert(DUT.ex_result_X == 'b0) begin
-      $display("ex_result_X is correct.  Expected: %b, Actual: %b", 'b1,DUT.ex_result_X); pass();
+      $display("ex_result_X is correct.  Expected: %b, Actual: %b", 'b0,DUT.ex_result_X); pass();
     end else begin
-      $display("ex_result_X is incorrect.  Expected: %h, Actual: %h", 'b1,DUT.ex_result_X); fail(); $finish();
+      $display("ex_result_X is incorrect.  Expected: %h, Actual: %h", 'b0,DUT.ex_result_X); fail(); $finish();
     end 
 
     //Advancing time
@@ -481,7 +481,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -616,7 +616,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -702,7 +702,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -790,7 +790,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -878,7 +878,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -1002,7 +1002,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -1126,7 +1126,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = '0;
@@ -1249,7 +1249,7 @@ module top(  input logic clk, input logic linetrace );
     reg_en_F = 1;
     pc_sel_F = '0;
     reg_en_D = 1;
-    op1_sel_D = 0;
+    op1_sel_D = 1;
     op2_sel_D = '0;
     csrr_sel_D = '0;
     imm_type_D = 3'd3;  // U-type imm-type
@@ -1390,19 +1390,19 @@ module top(  input logic clk, input logic linetrace );
     $display( "Advancing time");
     @(negedge clk); 
      // Checking F/D/X stage 
-    assert(DUT.ex_result_X == 'b00010110000000000000) begin
-      $display("ex_result_X is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.ex_result_X); pass();
+    assert(DUT.ex_result_X == 'b00010110001000000100) begin
+      $display("ex_result_X is correct.  Expected: %b, Actual: %b", 'b00010110001000000100,DUT.ex_result_X); pass();
     end else begin
-      $display("ex_result_X is incorrect.  Expected: %h, Actual: %h", 'b00010110000000000000,DUT.ex_result_X); fail(); $finish();
+      $display("ex_result_X is incorrect.  Expected: %h, Actual: %h", 'b00010110001000000100,DUT.ex_result_X); fail(); $finish();
     end 
 
     //Advancing time
     $display( "Advancing time");
-    @(negedge clk);
-    assert(DUT.rf_wdata_W == 'b00010110000000000000) begin
-      $display("rf_wdata_W is correct.  Expected: %b, Actual: %b", 'b00010110000000000000,DUT.rf_wdata_W); pass();
+    @(negedge clk); // x200 = b00000000001000000000
+    assert(DUT.rf_wdata_W == 'b00010110001000000000) begin
+      $display("rf_wdata_W is correct.  Expected: %b, Actual: %b", 'b00010110001000000000,DUT.rf_wdata_W); pass();
     end else begin
-      $display("rf_wdata_W is incorrect.  Expected: %h, Actual: %h", 'b00010110000000000000,DUT.rf_wdata_W); fail(); $finish();
+      $display("rf_wdata_W is incorrect.  Expected: %h, Actual: %h", 'b00010110001000000000,DUT.rf_wdata_W); fail(); $finish();
     end 
 
 
