@@ -1526,7 +1526,6 @@ module top(  input logic clk, input logic linetrace );
     end else begin
       $display("pc_X is incorrect.  Expected: %h, Actual: %h", 'h208,DUT.pc_X); fail(); $finish();
     end 
-    @(negedge clk);
     assert(DUT.rf_wdata_W == 'h204) begin
       $display("rf_wdata_W is correct.  Expected: %h, Actual: %h", 'h204,DUT.rf_wdata_W); pass();
     end else begin

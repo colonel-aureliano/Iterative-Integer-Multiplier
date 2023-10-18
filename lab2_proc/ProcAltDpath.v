@@ -306,7 +306,7 @@ module lab2_proc_ProcAltDpath
     .out      (ex_result_X)
   );
 
-  assign ex_result_X = alu_result_X; // TODO: need to change it once we have multiplier
+  // TODO: need to add multiplier
 
   assign jalr_target_X = alu_result_X;
 
