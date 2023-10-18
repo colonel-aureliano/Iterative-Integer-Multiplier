@@ -385,7 +385,7 @@ module lab2_proc_ProcFLMultiCycle
             end
             `TINYRV2_INST_JALR  : begin
               n_rf[ rd ] = PC+4;
-              n_PC = ($signed(rf[rs1]) + $signed(imm_i(inst)))& 32'hfffffffe;
+              n_PC = ($signed(rf[rs1]) + $signed(imm_i(inst)))& $signed(32'hfffffffe);
             end
             `TINYRV2_INST_BEQ   : begin
               if (rf[rs1]==rf[rs2]) n_PC=$signed(PC) +$signed(imm_b(inst));
