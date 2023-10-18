@@ -257,10 +257,15 @@ module lab2_proc_ProcAltCtrl
 
   // Branch type
 
-  localparam br_x     = 3'bx; // Don't care
-  localparam br_na    = 3'b0; // No branch
-  localparam br_bne   = 3'b1; // bne
-  localparam br_jalr  = 3'b10; // jalr
+  localparam br_x     = 3'dx; // Don't care
+  localparam br_na    = 3'd0; // No branch
+  localparam br_bne   = 3'd1; // bne
+  localparam br_beq   = 3'd3  // beq
+  localparam br_blt   = 3'd3; // blt
+  localparam br_bltu  = 3'd4; // bltu
+  localparam br_bge   = 3'd5; // bge
+  localparam br_bgeu  = 3'd6; // bgeu
+  localparam br_jalr  = 3'd7; // jalr
 
   // Operand 1 Mux Select
 
@@ -425,9 +430,14 @@ module lab2_proc_ProcAltCtrl
       // =====================================================================================
       // Branch Instructions
       // =====================================================================================
+      `TINYRV2_INST_BEQ     :cs( y, br_beq, imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_x, n,  n,   n    );
       `TINYRV2_INST_BNE     :cs( y, br_bne, imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_a, n,  n,   n    );
+      `TINYRV2_INST_BLT     :cs( y, br_blt, imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_x, n,  n,   n    );
+      `TINYRV2_INST_BLTU    :cs( y, br_bltu,imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_x, n,  n,   n    );
+      `TINYRV2_INST_BGE     :cs( y, br_bge, imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_x, n,  n,   n    );
+      `TINYRV2_INST_BGEU    :cs( y,br_bgeu, imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_x, n,  n,   n    );
 
-      default               :cs( n, br_x,  imm_x, n,  am_x,  bm_x,    n, alu_x,  em_x, nr, wm_x, n,  n,   n    );
+      default               :cs( n, br_x,  imm_x, n,  am_x,  bm_x,   n, alu_x,   em_x, nr, wm_x, n,  n,   n    );
 
     endcase
   end // always_comb
@@ -588,6 +598,26 @@ module lab2_proc_ProcAltCtrl
   always_comb begin
     if ( val_X && ( br_type_X == br_bne ) ) begin
       pc_redirect_X = !br_cond_eq_X;
+      pc_sel_X      = pc_br; // use branch target
+    end
+    else if ( val_X && ( br_type_X == br_beq ) ) begin
+      pc_redirect_X = br_cond_eq_X;
+      pc_sel_X      = pc_br; // use branch target
+    end
+    else if ( val_X && ( br_type_X == br_blt ) ) begin
+      pc_redirect_X = br_cond_lt_X;
+      pc_sel_X      = pc_br; // use branch target
+    end
+    else if ( val_X && ( br_type_X == br_bltu ) ) begin
+      pc_redirect_X = br_cond_ltu_X;
+      pc_sel_X      = pc_br; // use branch target
+    end
+    else if ( val_X && ( br_type_X == br_bge ) ) begin
+      pc_redirect_X = !br_cond_lt_X;
+      pc_sel_X      = pc_br; // use branch target
+    end
+    else if ( val_X && ( br_type_X == br_bgeu ) ) begin
+      pc_redirect_X = !br_cond_ltu_X;
       pc_sel_X      = pc_br; // use branch target
     end
     else if ( val_X && ( br_type_X == br_jalr ) ) begin
