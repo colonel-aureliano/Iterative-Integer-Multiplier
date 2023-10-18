@@ -539,12 +539,17 @@ module lab2_proc_ProcAltCtrl
 
   // ostall if write address in M matches rs1 in D
 
-  logic  ostall_waddr_M_rs1_D;
-  assign ostall_waddr_M_rs1_D
-    = rs1_en_D && val_M && rf_wen_M
-      && ( inst_rs1_D == rf_waddr_M ) && ( rf_waddr_M != 5'd0 );
+  logic  ostall_load_use_X_rs1_D;
+  assign ostall_load_use_X_rs1_D
+    = val_D && rs1_en_D && val_X && rf_wen_X
+      && ( inst_rs1_D == rf_waddr_X ) && ( rf_waddr_X != 5'd0 )
+      && (dmem_reqstream_type_X == ld);;
 
   // ostall if write address in W matches rs1 in D
+
+  logic  ostall_hazard_D;
+  assign ostall_hazard_D =
+      ostall_load_use_X_rs1_D;
 
   logic  ostall_waddr_W_rs1_D;
   assign ostall_waddr_W_rs1_D
@@ -553,7 +558,7 @@ module lab2_proc_ProcAltCtrl
 
   // Final ostall signal
 
-  assign ostall_D = val_D && ( ostall_mngr2proc_D || ostall_imul_not_rdy_D );
+  assign ostall_D = val_D && ( ostall_mngr2proc_D || ostall_imul_not_rdy_D || ostall_hazard_D );
 
   // osquash due to jump instruction in D stage (not implemented yet)
 
