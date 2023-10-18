@@ -46,10 +46,12 @@ module lab2_proc_ProcAltCtrl
   output logic [1:0]  op2_sel_D,
   output logic [1:0]  csrr_sel_D,
   output logic [2:0]  imm_type_D,
+  output logic        imul_istream_val_D,
 
   output logic        reg_en_X,
   output logic [3:0]  alu_fn_X,
-  output logic        ex_result_sel_X,
+  output logic [1:0]  ex_result_sel_X,
+  output logic        imul_ostream_rdy_X,
 
   output logic        reg_en_M,
   output logic        wb_result_sel_M,
@@ -62,7 +64,13 @@ module lab2_proc_ProcAltCtrl
   // status signals (dpath->ctrl)
 
   input  logic [31:0] inst_D,
+  input  logic        imul_istream_rdy_D,
+
   input  logic        br_cond_eq_X,
+  input  logic        br_cond_lt_X,
+  input  logic        br_cond_ltu_X,
+
+  input  logic        imul_ostream_val_X,
 
   // extra ports
 
@@ -260,7 +268,7 @@ module lab2_proc_ProcAltCtrl
   localparam br_x     = 3'dx; // Don't care
   localparam br_na    = 3'd0; // No branch
   localparam br_bne   = 3'd1; // bne
-  localparam br_beq   = 3'd3  // beq
+  localparam br_beq   = 3'd2;  // beq
   localparam br_blt   = 3'd3; // blt
   localparam br_bltu  = 3'd4; // bltu
   localparam br_bge   = 3'd5; // bge
@@ -269,9 +277,9 @@ module lab2_proc_ProcAltCtrl
 
   // Operand 1 Mux Select
 
-  localparam am_x     = 'bx; // Don't care
-  localparam am_pc    = 'b0; // Use data from pc_reg_D
-  localparam am_rf    = 'b1;  // Use data from register file
+  localparam am_x     = 1'bx; // Don't care
+  localparam am_pc    = 1'b0; // Use data from pc_reg_D
+  localparam am_rf    = 1'b1;  // Use data from register file
   // Operand 2 Mux Select
 
   localparam bm_x     = 2'bx; // Don't care
@@ -298,9 +306,9 @@ module lab2_proc_ProcAltCtrl
 
   // Executiion Result
   localparam em_x     = 2'dx; // Don't care
-  localparam em_pc    = 2'd0; // From `pc_incr_X`
-  localparam em_alu   = 2'd1; // From ALU
-  // TODO: from multiplier
+  localparam em_mul   = 2'd0; // From Mul
+  localparam em_pc    = 2'd1; // From `pc_incr_X`
+  localparam em_a     = 2'd2; // From ALU
 
   // Immediate Type
   localparam imm_x    = 3'bx;
@@ -329,7 +337,7 @@ module lab2_proc_ProcAltCtrl
   logic       rs1_en_D;
   logic       rs2_en_D;
   logic [3:0] alu_fn_D;
-  logic       ex_result_sel_D;
+  logic [1:0] ex_result_sel_D;
   logic [1:0] dmem_reqstream_type_D;
   logic       wb_result_sel_D;
   logic       rf_wen_D;
@@ -349,7 +357,7 @@ module lab2_proc_ProcAltCtrl
     input logic [1:0] cs_op2_sel,
     input logic       cs_rs2_en,
     input logic [3:0] cs_alu_fn,
-    input logic       cs_ex_res_sel,
+    input logic [1:0] cs_ex_res_sel,
     input logic [1:0] cs_dmem_reqstream_type,
     input logic       cs_wb_result_sel,
     input logic       cs_rf_wen,
@@ -437,6 +445,9 @@ module lab2_proc_ProcAltCtrl
       `TINYRV2_INST_BGE     :cs( y, br_bge, imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_x, n,  n,   n    );
       `TINYRV2_INST_BGEU    :cs( y,br_bgeu, imm_b, y, am_rf, bm_rf,  y, alu_x,   em_a, nr, wm_x, n,  n,   n    );
 
+      // Multiplier
+      `TINYRV2_INST_MUL     :cs( y, br_na,  imm_x, y, am_rf, bm_rf,  y, alu_x,   em_mul,nr,wm_a, y,  n,   n    );
+
       default               :cs( n, br_x,  imm_x, n,  am_x,  bm_x,   n, alu_x,   em_x, nr, wm_x, n,  n,   n    );
 
     endcase
@@ -472,17 +483,26 @@ module lab2_proc_ProcAltCtrl
   logic  ostall_mngr2proc_D;
   assign ostall_mngr2proc_D = val_D && mngr2proc_rdy_D && !mngr2proc_val;
 
+  //==============================================
+  // val/rdy signals for the multiplier
+  //===============================================
 
+  // imul.req.val is sent from the D stage to the multiplier;
+  // if the D stage is stalling we do not want to send a request into the multiplier
+  assign imul_istream_val_D = val_D && !stall_D && (ex_result_sel_D == em_mul);
+
+  // imul.req.rdy is sent from the multiplier back to the D stage;
+  // if the multiplier is not ready to accept a new request you must originate a stall
+  logic  ostall_imul_not_rdy_D;
+  assign ostall_imul_not_rdy_D = val_D && !imul_istream_rdy_D;
 
   // jal logic, redirect PC in D if jal
   always_comb begin
     if ( val_D && ( imm_type_D == imm_j ) ) begin
-      $display("imm type j");
       pc_redirect_D = 1'b1;
       pc_sel_D      = pc_jal; // use jal target
     end
     else begin
-      $display("imm type not j");
       pc_redirect_D = 1'b0;
       pc_sel_D      = pc_plus4; // use pc+4
     end
@@ -540,7 +560,7 @@ module lab2_proc_ProcAltCtrl
 
   // Final ostall signal
 
-  assign ostall_D = val_D && ( ostall_mngr2proc_D || ostall_hazard_D );
+  assign ostall_D = val_D && ( ostall_mngr2proc_D || ostall_hazard_D || ostall_imul_not_rdy_D );
 
   // osquash due to jump instruction in D stage (not implemented yet)
 
@@ -630,9 +650,21 @@ module lab2_proc_ProcAltCtrl
     end
   end
 
+  // imul.resp.rdy is sent from the X stage to the multiplier
+  // if the X stage is stallig we do not want to accept a response from the multiplier
+  assign imul_ostream_rdy_X = val_X && !stall_X && (ex_result_sel_X == em_mul);
+
+
+  // imul.resp.val is sent from the multiplier back to the X stage
+  // if a `mul` instr is in the X stage, then should factor the multiplier's response val into the ostall logic for the X stage
+  // if the multiplier has not returned the response, we must wait for the multipiler to finish
+  logic  ostall_imul_not_rdy_X;
+  assign ostall_imul_not_rdy_X = val_X && !imul_ostream_val_X && (ex_result_sel_X == em_mul);
+
+
   // ostall due to dmem_reqstream not ready.
 
-  assign ostall_X = val_X && ( dmem_reqstream_type_X != nr ) && !dmem_reqstream_rdy;
+  assign ostall_X = val_X && ( dmem_reqstream_type_X != nr ) && !dmem_reqstream_rdy || ostall_imul_not_rdy_X;
 
   // osquash due to taken branch, notice we can't osquash if current
   // stage stalls, otherwise we will send osquash twice.

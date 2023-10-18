@@ -11,12 +11,8 @@
 
 `include "tinyrv2_encoding.v"
 `include "ProcAltCtrl.v"
-`include "ProcAltDPath.v"
+`include "ProcAltDpath.v"
 `include "DropUnit.v"
-
-//''' LAB TASK '''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-// Include components here
-//''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 module lab2_proc_ProcAlt
 #(
@@ -202,12 +198,16 @@ module lab2_proc_ProcAlt
   logic [1:0]  pc_sel_F;
 
   logic        reg_en_D;
+  logic        op1_sel_D;
   logic [1:0]  op2_sel_D;
   logic [1:0]  csrr_sel_D;
   logic [2:0]  imm_type_D;
+  logic        imul_istream_val_D;
 
   logic        reg_en_X;
   logic [3:0]  alu_fn_X;
+  logic [1:0]  ex_result_sel_X;
+  logic        imul_ostream_rdy_X;
 
   logic        reg_en_M;
   logic        wb_result_sel_M;
@@ -220,7 +220,12 @@ module lab2_proc_ProcAlt
   // status signals (dpath->ctrl)
 
   logic [31:0] inst_D;
+  logic        imul_istream_rdy_D;
+
   logic        br_cond_eq_X;
+  logic        br_cond_lt_X;
+  logic        br_cond_ltu_X;
+  logic        imul_ostream_val_X;
 
 lab2_proc_ProcAltCtrl ctrl
   (

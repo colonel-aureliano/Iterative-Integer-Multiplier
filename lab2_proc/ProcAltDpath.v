@@ -15,6 +15,8 @@
 `include "ProcDpathImmGen.v"
 `include "ProcDpathAlu.v"
 
+`include "lab1_imul/IntMulAlt.v"
+
 module lab2_proc_ProcAltDpath
 #(
   parameter p_num_cores = 1
@@ -50,10 +52,12 @@ module lab2_proc_ProcAltDpath
   input  logic [1:0]   op2_sel_D,
   input  logic [1:0]   csrr_sel_D,
   input  logic [2:0]   imm_type_D,
+  input  logic         imul_istream_val_D,
 
   input  logic         reg_en_X,
   input  logic [3:0]   alu_fn_X,
-  input  logic         ex_result_sel_X,
+  input  logic [1:0]   ex_result_sel_X,
+  input  logic         imul_ostream_rdy_X,
 
   input  logic         reg_en_M,
   input  logic         wb_result_sel_M,
@@ -66,7 +70,12 @@ module lab2_proc_ProcAltDpath
   // status signals (dpath->ctrl)
 
   output logic [31:0]  inst_D,
+  output logic         imul_istream_rdy_D,
+
   output logic         br_cond_eq_X,
+  output logic         br_cond_lt_X,
+  output logic         br_cond_ltu_X,
+  output logic         imul_ostream_val_X,
 
   // extra ports
 
@@ -294,19 +303,34 @@ module lab2_proc_ProcAltDpath
     .fn       (alu_fn_X),
     .out      (alu_result_X),
     .ops_eq   (br_cond_eq_X),
-    .ops_lt   (),
-    .ops_ltu  ()
+    .ops_lt   (br_cond_lt_X),
+    .ops_ltu  (br_cond_ltu_X)
   );
 
-  vc_Mux2#(32) ex_result_sel_mux_X
+  vc_Mux3#(32) ex_result_sel_mux_X
   (
-    .in0      (pc_plus4_X),
-    .in1      (alu_result_X),
+    .in0      (imul_resp_msg),
+    .in1      (pc_plus4_X),
+    .in2      (alu_result_X),
     .sel      (ex_result_sel_X),
     .out      (ex_result_X)
   );
 
-  // TODO: need to add multiplier
+  logic [31:0]  imul_resp_msg;
+
+  lab1_imul_IntMulAlt imul 
+  (
+    .clk          (clk),
+    .reset        (reset),
+
+    .istream_val  (imul_istream_val_D),
+    .istream_rdy  (imul_istream_rdy_D),
+    .istream_msg  ({op1_D,op2_D}),
+
+    .ostream_val  (imul_ostream_val_X),
+    .ostream_rdy  (imul_ostream_rdy_X),
+    .ostream_msg  (imul_resp_msg)
+  );
 
   assign jalr_target_X = alu_result_X;
 
