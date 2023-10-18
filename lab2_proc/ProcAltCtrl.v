@@ -26,6 +26,7 @@ module lab2_proc_ProcAltCtrl
 
   output logic        dmem_reqstream_val,
   input  logic        dmem_reqstream_rdy,
+  output logic [2:0]  dmem_reqstream_msg_type,
   input  logic        dmem_respstream_val,
   output logic        dmem_respstream_rdy,
 
@@ -544,13 +545,13 @@ module lab2_proc_ProcAltCtrl
     = rs2_en_D && val_M && rf_wen_M
       && ( inst_rs2_D == rf_waddr_M ) && ( rf_waddr_M != 5'd0 );
 
-  // ostall if write address in W matches rs2 in D
+ // ostall if write address in W matches rs2 in D
 
   logic  ostall_waddr_W_rs2_D;
   assign ostall_waddr_W_rs2_D
     = rs2_en_D && val_W && rf_wen_W
       && ( inst_rs2_D == rf_waddr_W ) && ( rf_waddr_W != 5'd0 );
-
+      
   // Put together ostall signal due to hazards
 
   logic  ostall_hazard_D;
@@ -650,6 +651,12 @@ module lab2_proc_ProcAltCtrl
     end
   end
 
+  always_comb begin
+    if ( dmem_reqstream_type_X == st ) begin
+      dmem_reqstream_msg_type = 3'd1;
+    end else dmem_reqstream_msg_type = 3'd0;
+  end
+
   // imul.resp.rdy is sent from the X stage to the multiplier
   // if the X stage is stallig we do not want to accept a response from the multiplier
   assign imul_ostream_rdy_X = val_X && !stall_X && (ex_result_sel_X == em_mul);
@@ -663,8 +670,10 @@ module lab2_proc_ProcAltCtrl
 
 
   // ostall due to dmem_reqstream not ready.
+  logic   ostall_dmem_not_rdy_X;
+  assign  ostall_dmem_not_rdy_X = val_X && ( dmem_reqstream_type_X != nr ) && !dmem_reqstream_rdy;
 
-  assign ostall_X = val_X && ( dmem_reqstream_type_X != nr ) && !dmem_reqstream_rdy || ostall_imul_not_rdy_X;
+  assign ostall_X = ostall_dmem_not_rdy_X || ostall_imul_not_rdy_X;
 
   // osquash due to taken branch, notice we can't osquash if current
   // stage stalls, otherwise we will send osquash twice.

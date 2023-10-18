@@ -240,6 +240,7 @@ lab2_proc_ProcAltCtrl ctrl
 
     .dmem_reqstream_val       (dmem_reqstream_enq_val),
     .dmem_reqstream_rdy       (dmem_reqstream_enq_rdy),
+    .dmem_reqstream_msg_type  (dmem_reqstream_enq_msg_type),
     .dmem_respstream_val      (dmem_respstream_val),
     .dmem_respstream_rdy      (dmem_respstream_rdy),
 
@@ -273,6 +274,7 @@ lab2_proc_ProcAltCtrl ctrl
     // Data Memory Port
 
     .dmem_reqstream_msg_addr  (dmem_reqstream_enq_msg_addr),
+    .dmem_reqstream_msg_data  (dmem_reqstream_enq_msg_data),
     .dmem_respstream_msg_data (dmem_respstream_msg.data),
 
     // mngr communication ports

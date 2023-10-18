@@ -18,6 +18,9 @@ module lab2_proc_ProcDpathImmGen
       3'd0: // I-type
         imm = { {21{inst[31]}}, inst[30:25], inst[24:21], inst[20] };
 
+      3'd1: // S-type
+        imm = { {21{inst[31]}}, inst[30:25], inst[11:8], inst[7] };
+        
       3'd2: // B-type
         imm = { {20{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0 };
 
