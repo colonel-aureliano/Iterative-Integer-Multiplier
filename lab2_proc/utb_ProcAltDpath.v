@@ -48,7 +48,7 @@ module top(  input logic clk, input logic linetrace );
 
   logic         reg_en_X;
   logic [3:0]   alu_fn_X;
-  logic [1:0]   ex_result_sel_X;
+  logic         ex_result_sel_X;
   logic         imul_ostream_rdy_X;
 
   logic         reg_en_M;
@@ -219,7 +219,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -355,7 +355,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -488,7 +488,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -623,7 +623,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -709,7 +709,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -797,7 +797,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -885,7 +885,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -1009,7 +1009,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -1133,7 +1133,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -1256,7 +1256,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -1341,7 +1341,7 @@ module top(  input logic clk, input logic linetrace );
     imul_istream_val_D = '0;
     reg_en_X =1;
     alu_fn_X =0;
-    ex_result_sel_X =0;
+    ex_result_sel_X =1;
     imul_ostream_rdy_X =0;
     reg_en_M =1;
     wb_result_sel_M =0;
@@ -1496,10 +1496,15 @@ module top(  input logic clk, input logic linetrace );
     end else begin
       $display("pc_X is incorrect.  Expected: %h, Actual: %h", 'h200,DUT.pc_X); fail(); $finish();
     end 
+    assert(DUT.imm_D == 'b11111111111111111111_100010100010) begin
+      $display("imm_D is correct.  Expected: %b, Actual: %b", 'b11111111111111111111_100010100010,DUT.imm_D);pass();
+    end else begin
+      $display("imm_D is incorrect.  Expected: %b, Actual: %b", 'b11111111111111111111_100010100010,DUT.imm_D); fail(); $finish();
+    end 
     // Setting Branch 
     op2_sel_D  = 2'b01; // choose sext(imm)
     imm_type_D = 0; // I-type imm-type
-    pc_sel_F = 2'b11;  // jalr_target_D
+    pc_sel_F = 3;  // jalr_target_D
     alu_fn_X   = 4'd10;   // ALU JALR
     
     // 11111111111111111111100010100010

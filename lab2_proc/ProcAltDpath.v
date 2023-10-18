@@ -53,6 +53,7 @@ module lab2_proc_ProcAltDpath
 
   input  logic         reg_en_X,
   input  logic [3:0]   alu_fn_X,
+  input  logic         ex_result_sel_X,
 
   input  logic         reg_en_M,
   input  logic         wb_result_sel_M,
@@ -297,14 +298,13 @@ module lab2_proc_ProcAltDpath
     .ops_ltu  ()
   );
 
-  // vc_Mux3#(32) ex_result_sel_mux_X
-  // (
-  //   .in0      (pc_plus4_X),
-  //   .in1      (alu_result_X),
-  //   .in2      (imul_resp_msg),
-  //   .sel      (ex_result_sel_X),
-  //   .out      (ex_result_X)
-  // );
+  vc_Mux2#(32) ex_result_sel_mux_X
+  (
+    .in0      (pc_plus4_X),
+    .in1      (alu_result_X),
+    .sel      (ex_result_sel_X),
+    .out      (ex_result_X)
+  );
 
   assign ex_result_X = alu_result_X; // TODO: need to change it once we have multiplier
 
