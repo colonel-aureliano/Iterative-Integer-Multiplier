@@ -40,6 +40,7 @@ module top(  input logic clk, input logic linetrace );
   logic [1:0]   pc_sel_F;
 
   logic         reg_en_D;
+  logic [1:0]   op1_byp_sel_D;
   logic         op1_sel_D;
   logic [1:0]   op2_sel_D;
   logic [1:0]   csrr_sel_D;
@@ -124,6 +125,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
     #10
 
     //--------------------------------------------------------------------
@@ -229,6 +233,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
     #10
 
     //--------------------------------------------------------------------
@@ -365,6 +372,8 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
     
     #10
 
@@ -498,6 +507,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
     #10
 
     //--------------------------------------------------------------------
@@ -634,6 +646,9 @@ module top(  input logic clk, input logic linetrace );
     core_id = '0;
     reset = 1;
 
+    op1_byp_sel_D = 2'd3; // nobypass
+
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -719,6 +734,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
 
     #10
 
@@ -808,6 +826,9 @@ module top(  input logic clk, input logic linetrace );
     core_id = '0;
     reset = 1;
 
+    op1_byp_sel_D = 2'd3; // nobypass
+
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -895,6 +916,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
 
     #10
 
@@ -1020,6 +1044,9 @@ module top(  input logic clk, input logic linetrace );
     core_id = '0;
     reset = 1;
 
+    op1_byp_sel_D = 2'd3; // nobypass
+
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -1144,6 +1171,9 @@ module top(  input logic clk, input logic linetrace );
     core_id = '0;
     reset = 1;
 
+    op1_byp_sel_D = 2'd3; // nobypass
+
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -1267,6 +1297,9 @@ module top(  input logic clk, input logic linetrace );
     core_id = '0;
     reset = 1;
 
+    op1_byp_sel_D = 2'd3; // nobypass
+
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -1351,6 +1384,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
 
     #10
 
@@ -1449,6 +1485,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -1568,6 +1607,9 @@ module top(  input logic clk, input logic linetrace );
     core_id = '0;
     reset = 1;
 
+    op1_byp_sel_D = 2'd3; // nobypass
+
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -1682,6 +1724,9 @@ module top(  input logic clk, input logic linetrace );
     core_id = '0;
     reset = 1;
 
+    op1_byp_sel_D = 2'd3; // nobypass
+
+
     #10
 
     // Align test bench with negedge so that it looks better
@@ -1795,6 +1840,9 @@ module top(  input logic clk, input logic linetrace );
     stats_en_wen_W =0;
     core_id = '0;
     reset = 1;
+
+    op1_byp_sel_D = 2'd3; // nobypass
+
 
     #10
 
