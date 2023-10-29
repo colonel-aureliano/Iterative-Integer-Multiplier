@@ -10,7 +10,7 @@
 
 `include "vc/regs.v"
 `include "vc/trace.v"
-
+/* verilator lint_off UNOPTFLAT */
 module vc_TestSinkFile
 #(
   parameter p_msg_nbits = 1,
@@ -195,5 +195,5 @@ module vc_TestSinkFile
   // `VC_TRACE_END
 
 endmodule
-
+/* verilator lint_on UNOPTFLAT */
 `endif /* VC_TEST_SINK_V */

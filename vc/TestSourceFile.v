@@ -7,7 +7,7 @@
 
 `include "vc/regs.v"
 `include "vc/assert.v"
-
+/* verilator lint_off UNOPTFLAT */
 module vc_TestSourceFile
 #(
   parameter p_msg_nbits = 1,
@@ -151,5 +151,5 @@ module vc_TestSourceFile
   end
 
 endmodule
-
+/* verilator lint_on UNOPTFLAT */
 `endif /* VC_TEST_SOURCE_V */

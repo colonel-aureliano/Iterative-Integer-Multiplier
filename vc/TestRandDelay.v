@@ -10,7 +10,7 @@
 `define VC_TEST_RAND_DELAY_V
 
 `include "vc/regs.v"
-
+/* verilator lint_off UNOPTFLAT */
 module vc_TestRandDelay
 #(
   parameter p_msg_nbits = 1 // size of message in bits
@@ -191,5 +191,5 @@ module vc_TestRandDelay
   end
 
 endmodule
-
+/* verilator lint_on UNOPTFLAT */
 `endif /* VC_TEST_RAND_DELAY_V */

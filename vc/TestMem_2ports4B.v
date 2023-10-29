@@ -409,13 +409,13 @@ module vc_TestMem_2ports4B
   assign read_block0_M = m[physical_block_addr0_M];
 
   logic [c_resp_data_nbits-1:0] read_data0_M;
-  assign read_data0_M = read_block0_M >> (block_offset0_M*8);
+  assign read_data0_M = (~write_en0_M)?(read_block0_M >> (block_offset0_M*8)):'hDEADBEEF;
 
   logic [p_data_nbits-1:0] read_block1_M;
   assign read_block1_M = m[physical_block_addr1_M];
 
   logic [c_resp_data_nbits-1:0] read_data1_M;
-  assign read_data1_M = read_block1_M >> (block_offset1_M*8);
+  assign read_data1_M = (~write_en1_M)?read_block1_M >> (block_offset1_M*8):'hDEADBEEF;
 
   // Write the data if required. This is a sequential always block so
   // that the write happens on the next edge.
